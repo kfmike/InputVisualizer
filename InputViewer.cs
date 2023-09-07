@@ -1,11 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MonoGame.Extended;
 using MonoGame.Extended.BitmapFonts;
-using MonoGame.Extended.Gui;
-using MonoGame.Extended.Gui.Controls;
-using MonoGame.Extended.ViewportAdapters;
 using InputVisualizer.retrospy;
 using System;
 using System.Collections.Generic;
@@ -15,7 +11,10 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using InputVisualizer.Config;
-using InputVisualizer.UI;
+
+using Myra;
+using Myra.Graphics2D.UI;
+using Myra.Graphics2D;
 
 namespace InputVisualizer
 {
@@ -23,7 +22,6 @@ namespace InputVisualizer
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private GuiSystem _guiSystem;
 
         private const int MAX_SECONDS = 4;
         private const float PIXELS_PER_MILLISECOND = 0.05f;
@@ -41,25 +39,20 @@ namespace InputVisualizer
         private DateTime _minAge;
         private TimeSpan _purgeTimer = TimeSpan.Zero;
         private ViewerConfig _config;
-        private bool _readGamepad = false;
-        private Dictionary<string, PlayerIndex> _activeGamepads = new Dictionary<string, PlayerIndex>();
-        private int _activeGamepadIndex = 0;
+        private Dictionary<string, GamePadInfo> _systemGamePads = new Dictionary<string, GamePadInfo>();
         private GamepadConfig _activeGamepadConfig;
+        private InputMode _currentInputMode = InputMode.Gamepad;
+        private PlayerIndex _currentPlayerIndex;
+
+        private Desktop _desktop;
 
         public InputViewer()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 1024;
+            _graphics.PreferredBackBufferWidth = 824;
             _graphics.PreferredBackBufferHeight = 420;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            Window.AllowUserResizing = true;
-            Window.ClientSizeChanged += WindowOnClientSizeChanged;
-        }
-
-        private void WindowOnClientSizeChanged(object sender, EventArgs eventArgs)
-        {
-            _guiSystem.ClientSizeChanged();
         }
 
         protected override void Initialize()
@@ -68,224 +61,115 @@ namespace InputVisualizer
             _bitmapFont = Content.Load<BitmapFont>("my_font");
 
             InitGamepads();
+            LoadConfig();
+            InitInputSource();
             InitViewer();
             InitGui();
-
+            
             base.Initialize();
         }
 
         private void InitGui()
         {
-            var viewportAdapter = new DefaultViewportAdapter(GraphicsDevice);
-            var guiRenderer = new GuiSpriteBatchRenderer(GraphicsDevice, () => Matrix.Identity);
+            MyraEnvironment.Game = this;
 
-            BitmapFont.UseKernings = false;
-            Skin.CreateDefault(_bitmapFont);
-
-            var generalContent = new ConfigViewModel("General",
-                new StackPanel
-                {
-                    Margin = 5,
-                    Orientation = Orientation.Vertical,
-                    Items =
-                    {
-                        new Label("Buttons") { Margin = 5 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 5,
-                            Items =
-                            {
-                                new Button { Content = "Enabled" },
-                                new Button { Content = "Disabled", IsEnabled = false },
-                                new ToggleButton { Content = "ToggleButton" }
-                            }
-                        },
-
-                        new Label("TextBox") { Margin = 5 },
-                        new TextBox {Text = "TextBox" },
-
-                        new Label("CheckBox") { Margin = 5 },
-                        new CheckBox {Content = "Check me please!"},
-
-                        new Label("ListBox") { Margin = 5 },
-                        new ListBox {Items = {"ListBoxItem1", "ListBoxItem2", "ListBoxItem3"}, SelectedIndex = 0},
-
-                        new Label("ProgressBar") { Margin = 5 },
-                        new ProgressBar {Progress = 0.5f, Width = 100},
-
-                        new Label("ComboBox") { Margin = 5 },
-                        new ComboBox {Items = {"ComboBoxItemA", "ComboBoxItemB", "ComboBoxItemC"}, SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left}
-                    }
-                });
-
-            var displayContent = new ConfigViewModel("Display",
-                new StackPanel
-                {
-                    Margin = 5,
-                    Orientation = Orientation.Vertical,
-                    Items =
-                    {
-                        new Label("Buttons") { Margin = 5 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 5,
-                            Items =
-                            {
-                                new Button { Content = "Enabled" },
-                                new Button { Content = "Disabled", IsEnabled = false },
-                                new ToggleButton { Content = "ToggleButton" }
-                            }
-                        },
-
-                        new Label("TextBox") { Margin = 5 },
-                        new TextBox {Text = "TextBox" },
-
-                        new Label("CheckBox") { Margin = 5 },
-                        new CheckBox {Content = "Check me please!"},
-
-                        new Label("ListBox") { Margin = 5 },
-                        new ListBox {Items = {"ListBoxItem1", "ListBoxItem2", "ListBoxItem3"}, SelectedIndex = 0},
-
-                        new Label("ProgressBar") { Margin = 5 },
-                        new ProgressBar {Progress = 0.5f, Width = 100},
-
-                        new Label("ComboBox") { Margin = 5 },
-                        new ComboBox {Items = {"ComboBoxItemA", "ComboBoxItemB", "ComboBoxItemC"}, SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left}
-                    }
-                });
-
-            var gamePadConfigViewModels = new List<ConfigViewModel>();
-            foreach( var gamepad in _activeGamepads )
+            var grid = new Grid
             {
-                var gamepadContent = new ConfigViewModel($"Gamepad {gamepad.Value}",
-                new StackPanel
-                {
-                    Margin = 5,
-                    Orientation = Orientation.Vertical,
-                    Items =
-                    {
-                        new Label("Buttons") { Margin = 5 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 5,
-                            Items =
-                            {
-                                new Button { Content = "Enabled" },
-                                new Button { Content = "Disabled", IsEnabled = false },
-                                new ToggleButton { Content = "ToggleButton" }
-                            }
-                        },
-
-                        new Label("TextBox") { Margin = 5 },
-                        new TextBox {Text = "TextBox" },
-
-                        new Label("CheckBox") { Margin = 5 },
-                        new CheckBox {Content = "Check me please!"},
-
-                        new Label("ListBox") { Margin = 5 },
-                        new ListBox {Items = {"ListBoxItem1", "ListBoxItem2", "ListBoxItem3"}, SelectedIndex = 0},
-
-                        new Label("ProgressBar") { Margin = 5 },
-                        new ProgressBar {Progress = 0.5f, Width = 100},
-
-                        new Label("ComboBox") { Margin = 5 },
-                        new ComboBox {Items = {"ComboBoxItemA", "ComboBoxItemB", "ComboBoxItemC"}, SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left}
-                    }
-                });
-                gamePadConfigViewModels.Add(gamepadContent);
-            }
-
-            var allContents = new List<ConfigViewModel>() { generalContent, displayContent };
-            allContents.AddRange(gamePadConfigViewModels);
-
-            var configScreen = new Screen
-            {
-                Content = new DockPanel
-                {
-                    LastChildFill = false,
-                    Items =
-                    {
-                        new ListBox
-                        {
-                            Name = "MenuList",
-                            AttachedProperties = { { DockPanel.DockProperty, Dock.Right} },
-                            ItemPadding = new Thickness(5),
-                            VerticalAlignment = VerticalAlignment.Stretch,
-                            HorizontalAlignment = HorizontalAlignment.Left,
-                            SelectedIndex = 0,
-                            Items = {  }
-                        },
-                        new ContentControl
-                        {
-                            AttachedProperties = { { DockPanel.DockProperty, Dock.Right} },
-                            Name = "Content",
-                            BackgroundColor = new Color(30, 30, 30),
-
-                        }
-                    }
-                }
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right
             };
 
-            _guiSystem = new GuiSystem(viewportAdapter, guiRenderer) { ActiveScreen = configScreen };
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var menuList = configScreen.FindControl<ListBox>("MenuList");
-
-            foreach( var content in allContents )
+            var inputSourceLabel = new Label
             {
-                menuList.Items.Add(content);
+                Id = "inputSourceLabel",
+                Text = "Input",
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Padding = new Thickness(2)
+            };
+            grid.Widgets.Add(inputSourceLabel);
+            var inputSourceCombo = new ComboBox
+            {
+                GridColumn = 1,
+                GridRow = 0,
+                Padding = new Thickness(2),
+            };
+
+            foreach (var kvp in _systemGamePads)
+            {
+                var name = kvp.Value.Name.Length > 32 ? kvp.Value.Name.Substring(0, 32) : kvp.Value.Name;
+                inputSourceCombo.Items.Add(new ListItem(name, Color.White, kvp.Key));
+            }
+            inputSourceCombo.Items.Add(new ListItem("RetroSpy", Color.White, "spy"));
+
+            foreach (var item in inputSourceCombo.Items)
+            {
+                if (_config.CurrentInputSource == (string)item.Tag)
+                {
+                    inputSourceCombo.SelectedItem = item;
+                }
             }
 
-            var menuContent = configScreen.FindControl<ContentControl>("Content");
+            inputSourceCombo.SelectedIndexChanged += (s, a) =>
+            {
+                SetCurrentInputSource((string)inputSourceCombo.SelectedItem.Tag);
+            };
 
-            menuList.SelectedIndexChanged += (sender, args) => menuContent.Content = (menuList.SelectedItem as ConfigViewModel)?.Content;
-            menuContent.Content = (menuList.SelectedItem as ConfigViewModel)?.Content;
+            grid.Widgets.Add(inputSourceCombo);
+
+            var configureInputButton = new TextButton
+            {
+                GridColumn = 2,
+                GridRow = 0,
+                Text = "Configure",
+                Padding = new Thickness(2)
+            };
+            grid.Widgets.Add(configureInputButton);
+
+            _desktop = new Desktop();
+            _desktop.Root = grid;
+        }
+
+        private void SetCurrentInputSource( string id )
+        {
+            _config.CurrentInputSource = id;
+            SaveConfig();
+            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+            InitInputSource();
         }
 
         private void InitGamepads()
         {
-            _activeGamepads.Clear();
+            _systemGamePads.Clear();
             for (var i = PlayerIndex.One; i <= PlayerIndex.Four; i++)
             {
                 var state = GamePad.GetState(i);
                 if (state.IsConnected)
                 {
                     var caps = GamePad.GetCapabilities(i);
-                    _activeGamepads.Add(caps.Identifier, i);
+                    _systemGamePads.Add(caps.Identifier, new GamePadInfo
+                    {
+                        Id = caps.Identifier,
+                        Name = caps.DisplayName,
+                        PlayerIndex = i
+                    });
                 }
             }
         }
 
         private void InitViewer()
         {
-            LoadConfig();
-
-            if (_config.CurrentControllerType == ControllerType.RetroSpy)
-            {
-                _serialReader = new SerialControllerReader("COM4 (Generic Arduino)", false, SuperNESandNES.ReadFromPacketNES);
-                _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
-                InitRetroSpyNESButtons();
-            }
-            else if (_config.CurrentControllerType == ControllerType.Gamepad)
-            {
-                _readGamepad = true;
-
-                if (string.IsNullOrEmpty(_config.CurrentGamepad) && _config.Gamepads.Any())
-                {
-                    _activeGamepadIndex = 0;
-                    _activeGamepadConfig = _config.Gamepads[0];
-                }
-
-                InitGamepadButtons();
-            }
-
             _pixel = new Texture2D(_graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
             _pixel.SetData(new Color[] { Color.White });
             _horizontalAngle = (float)0.0f;
             _minAge = DateTime.Now.AddSeconds(-MAX_SECONDS);
-
         }
 
         private void LoadConfig()
@@ -298,14 +182,56 @@ namespace InputVisualizer
             }
             else { _config = new ViewerConfig(); }
 
-            foreach (var kvp in _activeGamepads)
+            foreach (var kvp in _systemGamePads)
             {
-                var gamepadConfig = _config.Gamepads.FirstOrDefault(g => g.Id == kvp.Key);
+                var gamepadConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == kvp.Key);
                 if (gamepadConfig == null)
                 {
-                    _config.Gamepads.Add(new GamepadConfig() { Id = kvp.Key, Style = GamepadStyle.XBOX });
+                    _config.GamepadConfigs.Add(new GamepadConfig() { Id = kvp.Key, Style = GamepadStyle.XBOX });
                 }
             }
+            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+        }
+
+        private void SaveConfig()
+        {
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.txt");
+            File.WriteAllText(path, JsonConvert.SerializeObject(_config));
+        }
+
+        private void InitInputSource()
+        {
+            if (_currentInputMode == InputMode.RetroSpy)
+            {
+                _serialReader = new SerialControllerReader("COM4 (Generic Arduino)", false, SuperNESandNES.ReadFromPacketNES);
+                _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                InitRetroSpyNESButtons();
+            }
+            else if (_currentInputMode == InputMode.Gamepad)
+            {
+                if( string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource ))
+                {
+                    if( _config.GamepadConfigs.Any())
+                    {
+                        foreach( var gamepadConfig in _config.GamepadConfigs)
+                        {
+                            if( _systemGamePads.Keys.Contains(gamepadConfig.Id))
+                            {
+                                _config.CurrentInputSource = gamepadConfig.Id;
+                                _activeGamepadConfig = gamepadConfig;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if( _systemGamePads.Keys.Contains(_config.CurrentInputSource))
+                {
+                    _activeGamepadConfig = _config.GamepadConfigs.First( c => c.Id == _config.CurrentInputSource );
+                }
+                _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
+                InitGamepadButtons();
+            }
+            InitButtons();
         }
 
         private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
@@ -324,8 +250,34 @@ namespace InputVisualizer
             }
         }
 
+        private void InitButtons()
+        {
+            switch( _currentInputMode )
+            {
+                case InputMode.RetroSpy:
+                    {
+                        InitRetroSpyNESButtons();
+                        break;
+                    }
+                case InputMode.Gamepad:
+                    {
+                        InitGamepadButtons();
+                        break;
+                    }
+            }
+
+            _frequencyDict.Clear();
+            _onRects.Clear();
+            foreach (var button in _buttonInfos)
+            {
+                _frequencyDict.Add(button.Key, 0);
+                _onRects.Add(button.Key, new List<Rectangle>());
+            }
+        }
+
         private void InitRetroSpyNESButtons()
         {
+            _buttonInfos.Clear();
             _buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
             _buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
             _buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
@@ -334,16 +286,11 @@ namespace InputVisualizer
             _buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
             _buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
             _buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
-
-            foreach (var button in _buttonInfos)
-            {
-                _frequencyDict.Add(button.Key, 0);
-                _onRects.Add(button.Key, new List<Rectangle>());
-            }
         }
 
         private void InitGamepadButtons()
         {
+            _buttonInfos.Clear();
             _buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
             _buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
             _buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
@@ -371,18 +318,13 @@ namespace InputVisualizer
 
             _buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
             _buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
-
-            foreach (var button in _buttonInfos)
-            {
-                _frequencyDict.Add(button.Key, 0);
-                _onRects.Add(button.Key, new List<Rectangle>());
-            }
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            
             // TODO: use this.Content to load your game content here
         }
 
@@ -393,7 +335,7 @@ namespace InputVisualizer
                 Exit();
             }
 
-            if (_readGamepad)
+            if ( _currentInputMode == InputMode.Gamepad)
             {
                 ReadGamepadInputs();
             }
@@ -413,7 +355,6 @@ namespace InputVisualizer
                 _purgeTimer = TimeSpan.Zero;
             }
             BuildRects();
-            _guiSystem.Update(gameTime);
             base.Update(gameTime);
         }
 
@@ -425,7 +366,7 @@ namespace InputVisualizer
                 {
                     case "UP":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).DPad.Up == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -434,7 +375,7 @@ namespace InputVisualizer
                         }
                     case "DOWN":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).DPad.Down == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -443,7 +384,7 @@ namespace InputVisualizer
                         }
                     case "LEFT":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).DPad.Left == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -452,7 +393,7 @@ namespace InputVisualizer
                         }
                     case "RIGHT":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).DPad.Right == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -461,7 +402,7 @@ namespace InputVisualizer
                         }
                     case "SELECT":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.Back == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -470,7 +411,7 @@ namespace InputVisualizer
                         }
                     case "START":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.Start == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -479,7 +420,7 @@ namespace InputVisualizer
                         }
                     case "A":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.A == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -488,7 +429,7 @@ namespace InputVisualizer
                         }
                     case "B":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.B == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -497,7 +438,7 @@ namespace InputVisualizer
                         }
                     case "X":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.X == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -506,7 +447,7 @@ namespace InputVisualizer
                         }
                     case "Y":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.Y == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -515,7 +456,7 @@ namespace InputVisualizer
                         }
                     case "L":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.LeftShoulder == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -524,7 +465,7 @@ namespace InputVisualizer
                         }
                     case "R":
                         {
-                            var pressed = GamePad.GetState(_activeGamepadIndex).Buttons.RightShoulder == ButtonState.Pressed;
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed;
                             if (button.Value.IsPressed() != pressed)
                             {
                                 _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
@@ -595,11 +536,10 @@ namespace InputVisualizer
 
             //var matrix = Matrix.CreateScale(1.f, 1.5f, 1.0f);
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend /*transformMatrix: matrix */ );
-            _guiSystem.Draw(gameTime);
             DrawButtons();
             DrawQueues();
             _spriteBatch.End();
-
+            _desktop.Render();
 
             base.Draw(gameTime);
         }
