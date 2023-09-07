@@ -16,7 +16,7 @@ using Myra;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
 using System.IO.Ports;
-using System.Xml.Linq;
+using Myra.Graphics2D.UI.ColorPicker;
 
 namespace InputVisualizer
 {
@@ -51,8 +51,8 @@ namespace InputVisualizer
         public InputViewer()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 824;
-            _graphics.PreferredBackBufferHeight = 420;
+            _graphics.PreferredBackBufferWidth = 624;
+            _graphics.PreferredBackBufferHeight = 520;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
@@ -150,62 +150,121 @@ namespace InputVisualizer
 
             _desktop = new Desktop();
             _desktop.Root = grid;
+            _desktop.Root.VerticalAlignment = VerticalAlignment.Bottom;
+            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
         }
 
         private void ShowConfigureRetroSpyDialog()
         {
+            var buttonMapWidgets = new List<Widget>();
+
             var dialog = new Dialog
             {
                 Title = "RetroSpy Config"
             };
-            var stackPanel = new VerticalStackPanel
+
+            var grid = new Grid
             {
-                Spacing = 8
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right,
             };
-            stackPanel.Proportions.Add(new Proportion
-            {
-                Type = ProportionType.Auto,
-            });
-            stackPanel.Proportions.Add(new Proportion
-            {
-                Type = ProportionType.Fill,
-            });
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+
             var label1 = new Label
             {
-                Text = "COM Port Name:"
+                Text = "COM Port:",
+                GridColumnSpan = 2
             };
-            stackPanel.Widgets.Add(label1);
+            grid.Widgets.Add(label1);
 
-            var comPortComboBox = new ComboBox();
-            foreach( var name in SerialPort.GetPortNames() )
+            var comPortComboBox = new ComboBox()
+            {
+                GridRow = 0,
+                GridColumn = 2,
+                GridColumnSpan = 2,
+            };
+
+            foreach (var name in SerialPort.GetPortNames())
             {
                 var item = new ListItem(name, Color.White, name);
                 comPortComboBox.Items.Add(item);
-                if (string.Equals(_config.RetroSpyConfig.ComPortName, name, StringComparison.OrdinalIgnoreCase) )
+                if (string.Equals(_config.RetroSpyConfig.ComPortName, name, StringComparison.OrdinalIgnoreCase))
                 {
                     comPortComboBox.SelectedItem = item;
                 }
             }
-            stackPanel.Widgets.Add(comPortComboBox);
+            grid.Widgets.Add(comPortComboBox);
 
             var label2 = new Label
             {
-                Text = "Style:"
+                Text = "Style:",
+                GridRow = 1,
+                GridColumn = 0,
+                GridColumnSpan = 2,
             };
-            stackPanel.Widgets.Add(label2);
-            var styleComboBox = new ComboBox();
-            foreach(RetroSpyControllerType value in Enum.GetValues( typeof(RetroSpyControllerType) ) )
+            grid.Widgets.Add(label2);
+            var styleComboBox = new ComboBox()
+            {
+                GridRow = 1,
+                GridColumn = 2,
+                GridColumnSpan = 2,
+            };
+            
+            foreach (RetroSpyControllerType value in Enum.GetValues(typeof(RetroSpyControllerType)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
                 styleComboBox.Items.Add(item);
-                if( _config.RetroSpyConfig.ControllerType == value)
+                if (_config.RetroSpyConfig.ControllerType == value)
                 {
                     styleComboBox.SelectedItem = item;
                 }
             }
-            stackPanel.Widgets.Add(styleComboBox);
+            styleComboBox.SelectedIndexChanged += (o, e) =>
+            {
+                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
+                DrawRetroSpyButtonMappingSet(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType), grid, buttonMapWidgets);
+            };
+            grid.Widgets.Add(styleComboBox);
 
-            dialog.Content = stackPanel;
+            var mapLabelVisible = new Label
+            {
+                Text = "Visible",
+                GridRow = 2,
+                GridColumn = 0
+            };
+            var mapLabelButton = new Label
+            {
+                Text = "Button",
+                GridRow = 2,
+                GridColumn = 1
+            };
+            var mapLabelColor = new Label
+            {
+                Text = "Color",
+                GridRow = 2,
+                GridColumn = 2
+            };
+            var mapLabelOrder = new Label
+            {
+                Text = "Order",
+                GridRow = 2,
+                GridColumn = 3
+            };
+            grid.Widgets.Add(mapLabelVisible);
+            grid.Widgets.Add(mapLabelButton);
+            grid.Widgets.Add(mapLabelColor);
+            grid.Widgets.Add(mapLabelOrder);
+
+            DrawRetroSpyButtonMappingSet(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType), grid, buttonMapWidgets);
+
+            dialog.Content = grid;
             dialog.Closed += (s, a) =>
             {
                 if( !dialog.Result )
@@ -221,9 +280,95 @@ namespace InputVisualizer
             dialog.ShowModal(_desktop);
         }
 
+        private void DrawRetroSpyButtonMappingSet( GamepadButtonMappingSet mappingSet, Grid grid, List<Widget> currentWidgets )
+        {
+            var currGridRow = 3;
+
+            foreach( var widget in currentWidgets )
+            {
+                grid.Widgets.Remove(widget);
+            }
+            currentWidgets.Clear();
+
+            foreach (var mapping in mappingSet.ButtonMappings)
+            {
+                var visibleCheck = new CheckBox
+                {
+                    IsChecked = mapping.IsVisible,
+                    GridRow = currGridRow,
+                    GridColumn = 0
+                };
+                visibleCheck.Click += (s, e) =>
+                {
+                    mapping.IsVisible = visibleCheck.IsChecked;
+                };
+                currentWidgets.Add(visibleCheck);
+                var buttonLabel = new Label
+                {
+                    Text = mapping.Label,
+                    GridRow = currGridRow,
+                    GridColumn = 1
+                };
+                currentWidgets.Add(buttonLabel);
+                var colorButton = new TextButton
+                {
+                    GridRow = currGridRow,
+                    GridColumn = 2,
+                    Text = "Color",
+                    Padding = new Thickness(2),
+                    TextColor = mapping.Color,
+                };
+                colorButton.Click += (s, e) =>
+                {
+                    ChooseColor(mapping, colorButton);
+                };
+                currentWidgets.Add(colorButton);
+
+                var spinButton = new SpinButton
+                {
+                    GridColumn = 3,
+                    GridRow = currGridRow,
+                    Width = 50,
+                    Nullable = false,
+                    Value = mapping.Order,
+                    Integer = true,
+                    Increment = 1
+                };
+                spinButton.ValueChanged += (s, e) =>
+                {
+                    mapping.Order = (int)spinButton.Value;
+                };
+                currentWidgets.Add(spinButton);
+
+                currGridRow++;
+            }
+
+            foreach( var widget in currentWidgets )
+            {
+                grid.AddChild(widget);
+            }
+        }
+
         private void ShowConfigureGamePadDialog()
         {
 
+        }
+
+        public void ChooseColor( GamepadButtonMapping mapping, TextButton colorButton )
+        {
+            var colorWindow = new ColorPickerDialog();
+            colorWindow.Color = colorButton.TextColor;
+            colorWindow.ShowModal(_desktop);
+
+            colorWindow.Closed += (s, a) =>
+            {
+                if (!colorWindow.Result)
+                {
+                    return;
+                }
+                mapping.Color = colorWindow.Color;
+                colorButton.TextColor = colorWindow.Color;
+            };
         }
 
         private void SetCurrentInputSource( string id )
@@ -385,7 +530,7 @@ namespace InputVisualizer
             {
                 case RetroSpyControllerType.NES:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.OrderBy(m => m.Order))
+                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where( m => m.IsVisible ).OrderBy(m => m.Order))
                         {
                             _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
                         }
@@ -401,7 +546,7 @@ namespace InputVisualizer
                     }
                 case RetroSpyControllerType.SNES:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.OrderBy(m => m.Order))
+                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
                             _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
                         }
@@ -426,7 +571,7 @@ namespace InputVisualizer
         private void InitGamepadButtons()
         {
             _buttonInfos.Clear();
-            foreach( var mapping in _activeGamepadConfig.ButtonMappings.OrderBy( m => m.Order ) )
+            foreach( var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy( m => m.Order ) )
             {
                 _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
             }

@@ -8,12 +8,25 @@ namespace InputVisualizer.Config
     {
         public RetroSpyControllerType ControllerType { get; set; }
         public string ComPortName { get; set; }
-        public GamepadButtonMappingSet NES {  get; set; } = new GamepadButtonMappingSet();
+        public GamepadButtonMappingSet NES { get; set; } = new GamepadButtonMappingSet();
         public GamepadButtonMappingSet SNES { get; set; } = new GamepadButtonMappingSet();
+
+        public GamepadButtonMappingSet GetMappingSet(RetroSpyControllerType controllerType)
+        {
+            switch (controllerType)
+            {
+                case RetroSpyControllerType.NES:
+                    return NES;
+                case RetroSpyControllerType.SNES:
+                    return SNES;
+                default:
+                    return null;
+            }
+        }
 
         public void GenerateButtonMappings()
         {
-            if( !NES.ButtonMappings.Any())
+            if (!NES.ButtonMappings.Any())
             {
                 NES = new GamepadButtonMappingSet() { ControllerType = RetroSpyControllerType.NES };
 
