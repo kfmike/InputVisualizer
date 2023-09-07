@@ -16,7 +16,9 @@ namespace InputVisualizer
         {
             if (StateChangeHistory.Any())
             {
-                StateChangeHistory.Last().EndTime = time;
+                var last = StateChangeHistory.Last();
+                last.EndTime = time;
+                last.Completed = true;
             }
             StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
         }
@@ -26,7 +28,11 @@ namespace InputVisualizer
             var removeItems = new List<ButtonStateValue>();
             foreach (var change in StateChangeHistory)
             {
-                if (change.StartTime < DateTime.Now.AddSeconds(-MAX_AGE))
+                if (change.Completed && change.EndTime < DateTime.Now.AddSeconds(-MAX_AGE))
+                {
+                    removeItems.Add(change);
+                }
+                if( !change.IsPressed && change.StartTime < DateTime.Now.AddSeconds(-MAX_AGE) )
                 {
                     removeItems.Add(change);
                 }
