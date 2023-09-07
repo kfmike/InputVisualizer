@@ -15,6 +15,8 @@ using InputVisualizer.Config;
 using Myra;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
+using System.IO.Ports;
+using System.Xml.Linq;
 
 namespace InputVisualizer
 {
@@ -131,10 +133,97 @@ namespace InputVisualizer
                 Text = "Configure",
                 Padding = new Thickness(2)
             };
+
+            configureInputButton.Click += (s, a) =>
+            {
+                if (_currentInputMode == InputMode.RetroSpy)
+                {
+                    ShowConfigureRetroSpyDialog();
+                }
+                else
+                {
+                    ShowConfigureGamePadDialog();
+                }
+            };
+
             grid.Widgets.Add(configureInputButton);
 
             _desktop = new Desktop();
             _desktop.Root = grid;
+        }
+
+        private void ShowConfigureRetroSpyDialog()
+        {
+            var dialog = new Dialog
+            {
+                Title = "RetroSpy Config"
+            };
+            var stackPanel = new VerticalStackPanel
+            {
+                Spacing = 8
+            };
+            stackPanel.Proportions.Add(new Proportion
+            {
+                Type = ProportionType.Auto,
+            });
+            stackPanel.Proportions.Add(new Proportion
+            {
+                Type = ProportionType.Fill,
+            });
+            var label1 = new Label
+            {
+                Text = "COM Port Name:"
+            };
+            stackPanel.Widgets.Add(label1);
+
+            var comPortComboBox = new ComboBox();
+            foreach( var name in SerialPort.GetPortNames() )
+            {
+                var item = new ListItem(name, Color.White, name);
+                comPortComboBox.Items.Add(item);
+                if (string.Equals(_config.RetroSpyConfig.ComPortName, name, StringComparison.OrdinalIgnoreCase) )
+                {
+                    comPortComboBox.SelectedItem = item;
+                }
+            }
+            stackPanel.Widgets.Add(comPortComboBox);
+
+            var label2 = new Label
+            {
+                Text = "Style:"
+            };
+            stackPanel.Widgets.Add(label2);
+            var styleComboBox = new ComboBox();
+            foreach(RetroSpyControllerType value in Enum.GetValues( typeof(RetroSpyControllerType) ) )
+            {
+                var item = new ListItem(value.ToString(), Color.White, value);
+                styleComboBox.Items.Add(item);
+                if( _config.RetroSpyConfig.ControllerType == value)
+                {
+                    styleComboBox.SelectedItem = item;
+                }
+            }
+            stackPanel.Widgets.Add(styleComboBox);
+
+            dialog.Content = stackPanel;
+            dialog.Closed += (s, a) =>
+            {
+                if( !dialog.Result )
+                {
+                    return;
+                }
+                _config.RetroSpyConfig.ComPortName = (string)comPortComboBox.SelectedItem.Tag;
+                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
+
+                SaveConfig();
+                InitInputSource();
+            };
+            dialog.ShowModal(_desktop);
+        }
+
+        private void ShowConfigureGamePadDialog()
+        {
+
         }
 
         private void SetCurrentInputSource( string id )
@@ -187,9 +276,17 @@ namespace InputVisualizer
                 var gamepadConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == kvp.Key);
                 if (gamepadConfig == null)
                 {
-                    _config.GamepadConfigs.Add(new GamepadConfig() { Id = kvp.Key, Style = GamepadStyle.XBOX });
+                    gamepadConfig = _config.CreateGamepadConfig(kvp.Key, GamepadStyle.XBOX);
+                }
+                if( !gamepadConfig.ButtonMappings.Any() )
+                {
+                    gamepadConfig.GenerateButtonMappings();
                 }
             }
+
+            _config.RetroSpyConfig.GenerateButtonMappings();
+            
+            SaveConfig();
             _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
         }
 
@@ -203,9 +300,15 @@ namespace InputVisualizer
         {
             if (_currentInputMode == InputMode.RetroSpy)
             {
-                _serialReader = new SerialControllerReader("COM4 (Generic Arduino)", false, SuperNESandNES.ReadFromPacketNES);
-                _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
-                InitRetroSpyNESButtons();
+                if (!string.IsNullOrEmpty(_config.RetroSpyConfig.ComPortName))
+                {
+                    if( _serialReader != null )
+                    {
+                        _serialReader.Finish();
+                    }
+                    _serialReader = new SerialControllerReader("COM4 (Generic Arduino)", false, SuperNESandNES.ReadFromPacketNES);
+                    _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                }
             }
             else if (_currentInputMode == InputMode.Gamepad)
             {
@@ -229,7 +332,6 @@ namespace InputVisualizer
                     _activeGamepadConfig = _config.GamepadConfigs.First( c => c.Id == _config.CurrentInputSource );
                 }
                 _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
-                InitGamepadButtons();
             }
             InitButtons();
         }
@@ -278,46 +380,56 @@ namespace InputVisualizer
         private void InitRetroSpyNESButtons()
         {
             _buttonInfos.Clear();
-            _buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
-            _buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
-            _buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
-            _buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
-            _buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "A" });
-            _buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
-            _buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
-            _buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
+
+            switch( _config.RetroSpyConfig.ControllerType)
+            {
+                case RetroSpyControllerType.NES:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                        }
+                        //_buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
+                        //_buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
+                        //_buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
+                        //_buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
+                        //_buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
+                        //_buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "A" });
+                        //_buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
+                        //_buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
+                        break;
+                    }
+                case RetroSpyControllerType.SNES:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                        }
+                        //_buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
+                        //_buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
+                        //_buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
+                        //_buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
+                        //_buttonInfos.Add("Y", new ButtonStateHistory() { Color = Color.DarkGreen, Label = "Y" });
+                        //_buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
+                        //_buttonInfos.Add("X", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "X" });
+                        //_buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DarkRed, Label = "A" });
+                        //_buttonInfos.Add("L", new ButtonStateHistory() { Color = Color.DarkBlue, Label = "L" });
+                        //_buttonInfos.Add("R", new ButtonStateHistory() { Color = Color.DarkBlue, Label = "R" });
+                        //_buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
+                        //_buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
+                        break;
+                    }
+            }
+            
         }
 
         private void InitGamepadButtons()
         {
             _buttonInfos.Clear();
-            _buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
-            _buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
-            _buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
-            _buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
-
-            if (_activeGamepadConfig.Style == GamepadStyle.NES)
+            foreach( var mapping in _activeGamepadConfig.ButtonMappings.OrderBy( m => m.Order ) )
             {
-                _buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "A" });
-                _buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
+                _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
             }
-            else if (_activeGamepadConfig.Style == GamepadStyle.Arcade)
-            {
-                _buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DarkRed, Label = "A" });
-                _buttonInfos.Add("X", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
-                _buttonInfos.Add("Y", new ButtonStateHistory() { Color = Color.DarkGreen, Label = "C" });
-                _buttonInfos.Add("R", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "D" });
-            }
-            else
-            {
-                _buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DarkGreen, Label = "A" });
-                _buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.DarkRed, Label = "B" });
-                _buttonInfos.Add("X", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "X" });
-                _buttonInfos.Add("Y", new ButtonStateHistory() { Color = Color.Gold, Label = "Y" });
-            }
-
-            _buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
-            _buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
         }
 
         protected override void LoadContent()
