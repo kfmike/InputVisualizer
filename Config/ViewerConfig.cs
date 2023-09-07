@@ -7,9 +7,8 @@ namespace InputVisualizer.Config
     {
         public RetroSpyConfig RetroSpyConfig { get; set; } = new RetroSpyConfig();
         public DisplayConfig DisplayConfig { get; set; } = new DisplayConfig();
-        public ControllerType CurrentControllerType { get; set; } = ControllerType.Gamepad;
-        public string CurrentGamepad { get; set; }
-        public List<GamepadConfig> Gamepads { get; set; } = new List<GamepadConfig>();
+        public string CurrentInputSource { get; set; }
+        public List<GamepadConfig> GamepadConfigs { get; set; } = new List<GamepadConfig>();
     }
 }
 
