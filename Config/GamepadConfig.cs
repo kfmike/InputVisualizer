@@ -11,6 +11,7 @@ namespace InputVisualizer.Config
 
         public void GenerateButtonMappings()
         {
+            ButtonMappings.Clear();
             ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.UP, Label = "U", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.UP, Order = 0 });
             ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.DOWN, Label = "D", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.DOWN, Order = 1 });
             ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.LEFT, Label = "L", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.LEFT, Order = 2 });

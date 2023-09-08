@@ -3,6 +3,7 @@ namespace InputVisualizer
 {
     public enum ButtonType
     {
+        NONE,
         UP,
         DOWN, 
         LEFT, 

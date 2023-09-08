@@ -11,7 +11,6 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using InputVisualizer.Config;
-
 using Myra;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
@@ -43,6 +42,12 @@ namespace InputVisualizer
         private GamepadConfig _activeGamepadConfig;
         private InputMode _currentInputMode = InputMode.Gamepad;
         private PlayerIndex _currentPlayerIndex;
+
+        private bool _listeningForInput = false;
+        private bool _listeningCancelPressed = false;
+        private GamepadButtonMapping _listeningMapping;
+        private TextButton _listeningButton;
+        private Grid _listeningGrid;
 
         private Desktop _desktop;
 
@@ -156,6 +161,131 @@ namespace InputVisualizer
             _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
         }
 
+        private void ShowConfigureGamePadDialog()
+        {
+            var buttonMapWidgets = new List<Widget>();
+
+            var gamePadName = _systemGamePads[_activeGamepadConfig.Id].Name;
+            var name = gamePadName.Length > 32 ? gamePadName.Substring(0, 32) : gamePadName;
+            var dialog = new Dialog
+            {
+
+                Title = $"{name} Config"
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var label2 = new Label
+            {
+                Text = "Style:",
+                GridRow = 0,
+                GridColumn = 0,
+                GridColumnSpan = 2,
+            };
+            grid.Widgets.Add(label2);
+            var styleComboBox = new ComboBox()
+            {
+                GridRow = 0,
+                GridColumn = 2,
+                GridColumnSpan = 3,
+            };
+
+            foreach (GamepadStyle value in Enum.GetValues(typeof(GamepadStyle)))
+            {
+                var item = new ListItem(value.ToString(), Color.White, value);
+                styleComboBox.Items.Add(item);
+                if (_activeGamepadConfig.Style == value)
+                {
+                    styleComboBox.SelectedItem = item;
+                }
+            }
+            styleComboBox.SelectedIndexChanged += (o, e) =>
+            {
+                _activeGamepadConfig.Style = (GamepadStyle)styleComboBox.SelectedItem.Tag;
+                _activeGamepadConfig.GenerateButtonMappings();
+                DrawButtonMappings(_activeGamepadConfig.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+            };
+            grid.Widgets.Add(styleComboBox);
+
+            var mapLabelVisible = new Label
+            {
+                Text = "Visible",
+                GridRow = 1,
+                GridColumn = 0
+            };
+            var mapLabelButton = new Label
+            {
+                Text = "Button",
+                GridRow = 1,
+                GridColumn = 1
+            };
+            var mapLabelButtonMap = new Label
+            {
+                Text = "Mapped To",
+                GridRow = 1,
+                GridColumn = 2
+            };
+            var mapLabelColor = new Label
+            {
+                Text = "Color",
+                GridRow = 1,
+                GridColumn = 3
+            };
+            var mapLabelOrder = new Label
+            {
+                Text = "Order",
+                GridRow = 1,
+                GridColumn = 4
+            };
+            grid.Widgets.Add(mapLabelVisible);
+            grid.Widgets.Add(mapLabelButton);
+            grid.Widgets.Add(mapLabelButtonMap);
+            grid.Widgets.Add(mapLabelColor);
+            grid.Widgets.Add(mapLabelOrder);
+
+            DrawButtonMappings(_activeGamepadConfig.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+
+            dialog.Content = grid;
+            dialog.Closing += (s, a) =>
+            {
+                if (_listeningForInput)
+                {
+                    var messageBox = Dialog.CreateMessageBox("Hey you!", "Finish mapping button or hit DEL to cancel");
+                    messageBox.ShowModal(_desktop);
+                    a.Cancel = true;
+                }
+                else if( _listeningCancelPressed )
+                {
+                    a.Cancel = true;
+                    _listeningCancelPressed = false;
+                }
+            };
+            dialog.Closed += (s, a) =>
+            {
+                _listeningForInput = false;
+                if (!dialog.Result)
+                {
+                    return;
+                }
+
+                SaveConfig();
+                InitInputSource();
+            };
+            dialog.ShowModal(_desktop);
+        }
+
         private void ShowConfigureRetroSpyDialog()
         {
             var buttonMapWidgets = new List<Widget>();
@@ -231,7 +361,7 @@ namespace InputVisualizer
             styleComboBox.SelectedIndexChanged += (o, e) =>
             {
                 _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
-                DrawRetroSpyButtonMappingSet(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType), grid, buttonMapWidgets);
+                DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
             };
             grid.Widgets.Add(styleComboBox);
 
@@ -264,7 +394,7 @@ namespace InputVisualizer
             grid.Widgets.Add(mapLabelColor);
             grid.Widgets.Add(mapLabelOrder);
 
-            DrawRetroSpyButtonMappingSet(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType), grid, buttonMapWidgets);
+            DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
 
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
@@ -282,9 +412,9 @@ namespace InputVisualizer
             dialog.ShowModal(_desktop);
         }
 
-        private void DrawRetroSpyButtonMappingSet(GamepadButtonMappingSet mappingSet, Grid grid, List<Widget> currentWidgets)
+        private void DrawButtonMappings(List<GamepadButtonMapping> mappings, Grid grid, List<Widget> currentWidgets, int gridStartRow, bool showMapButton = false)
         {
-            var currGridRow = 3;
+            var currGridRow = gridStartRow;
 
             foreach (var widget in currentWidgets)
             {
@@ -292,30 +422,64 @@ namespace InputVisualizer
             }
             currentWidgets.Clear();
 
-            foreach (var mapping in mappingSet.ButtonMappings)
+            foreach (var mapping in mappings)
             {
+                var currColumn = 0;
+
                 var visibleCheck = new CheckBox
                 {
                     IsChecked = mapping.IsVisible,
                     GridRow = currGridRow,
-                    GridColumn = 0
+                    GridColumn = currColumn
                 };
                 visibleCheck.Click += (s, e) =>
                 {
                     mapping.IsVisible = visibleCheck.IsChecked;
                 };
                 currentWidgets.Add(visibleCheck);
+                currColumn++;
                 var buttonLabel = new Label
                 {
                     Text = mapping.Label,
                     GridRow = currGridRow,
-                    GridColumn = 1
+                    GridColumn = currColumn
                 };
                 currentWidgets.Add(buttonLabel);
+                currColumn++;
+
+                if (showMapButton)
+                {
+                    var mapButton = new TextButton
+                    {
+                        GridRow = currGridRow,
+                        GridColumn = currColumn,
+                        Text = mapping.MappedButtonType.ToString(),
+                        Padding = new Thickness(2),
+                        Tag = mapping
+                    };
+                    mapButton.Click += (s, e) =>
+                    {
+                        if (_listeningForInput)
+                        {
+                            var messageBox = Dialog.CreateMessageBox("Hey you!", "Finish mapping button or hit ESC to cancel");
+                            messageBox.ShowModal(_desktop);
+                            return;
+                        }
+                        _listeningForInput = true;
+                        _listeningButton = mapButton;
+                        _listeningButton.Text = "...";
+                        _listeningMapping = mapping;
+                        _listeningGrid = grid;
+                    };
+
+                    currentWidgets.Add(mapButton);
+                    currColumn++;
+                }
+
                 var colorButton = new TextButton
                 {
                     GridRow = currGridRow,
-                    GridColumn = 2,
+                    GridColumn = currColumn,
                     Text = "Color",
                     Padding = new Thickness(2),
                     TextColor = mapping.Color,
@@ -325,10 +489,11 @@ namespace InputVisualizer
                     ChooseColor(mapping, colorButton);
                 };
                 currentWidgets.Add(colorButton);
+                currColumn++;
 
                 var spinButton = new SpinButton
                 {
-                    GridColumn = 3,
+                    GridColumn = currColumn,
                     GridRow = currGridRow,
                     Width = 50,
                     Nullable = false,
@@ -341,7 +506,6 @@ namespace InputVisualizer
                     mapping.Order = (int)spinButton.Value;
                 };
                 currentWidgets.Add(spinButton);
-
                 currGridRow++;
             }
 
@@ -495,7 +659,7 @@ namespace InputVisualizer
                 {
                     return;
                 }
-                if( Int32.TryParse(displaySecondsText.Text, out var displaySeconds))
+                if (Int32.TryParse(displaySecondsText.Text, out var displaySeconds))
                 {
                     _config.DisplayConfig.DisplaySeconds = displaySeconds < 1 ? 1 : displaySeconds;
                 }
@@ -515,11 +679,6 @@ namespace InputVisualizer
                 SaveConfig();
             };
             dialog.ShowModal(_desktop);
-        }
-
-        private void ShowConfigureGamePadDialog()
-        {
-
         }
 
         public void ChooseColor(GamepadButtonMapping mapping, TextButton colorButton)
@@ -600,7 +759,7 @@ namespace InputVisualizer
             }
             else { _config = new ViewerConfig(); }
 
-            if( _config.DisplayConfig.DisplaySeconds < 0 ) { _config.DisplayConfig.DisplaySeconds = 1; }
+            if (_config.DisplayConfig.DisplaySeconds < 0) { _config.DisplayConfig.DisplaySeconds = 1; }
 
             foreach (var kvp in _systemGamePads)
             {
@@ -637,7 +796,7 @@ namespace InputVisualizer
                     {
                         _serialReader.Finish();
                     }
-                    _serialReader = new SerialControllerReader("COM4 (Generic Arduino)", false, SuperNESandNES.ReadFromPacketNES);
+                    _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
                     _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
                 }
             }
@@ -738,7 +897,7 @@ namespace InputVisualizer
             _buttonInfos.Clear();
             foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
-                _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
             }
         }
 
@@ -749,46 +908,133 @@ namespace InputVisualizer
 
         protected override void Update(GameTime gameTime)
         {
+            if (_listeningForInput)
+            {
+                CheckForListeningInput();
+            }
+            else
+            {
+                if (_currentInputMode == InputMode.Gamepad)
+                {
+                    ReadGamepadInputs();
+                }
+
+                foreach (var button in _buttonInfos)
+                {
+                    _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
+                }
+                _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
+                _purgeTimer += gameTime.ElapsedGameTime;
+                if (_purgeTimer.Milliseconds > 200)
+                {
+                    foreach (var button in _buttonInfos.Values)
+                    {
+                        button.RemoveOldStateChanges(_config.DisplayConfig.DisplaySeconds + 1);
+                    }
+                    _purgeTimer = TimeSpan.Zero;
+                }
+
+                switch (_config.DisplayConfig.Layout)
+                {
+                    case LayoutStyle.Horizontal:
+                        {
+                            BuildRects();
+                            break;
+                        }
+                    case LayoutStyle.Vertical:
+                        {
+                            BuildVerticalRects();
+                            break;
+                        }
+                }
+            }
+
+            base.Update(gameTime);
+        }
+
+        private void CheckForListeningInput()
+        {
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
-                Exit();
+                _listeningForInput = false;
+                _listeningCancelPressed = true;
+                _listeningButton.Text = _listeningMapping.ButtonType.ToString();
+                return;
             }
 
-            if (_currentInputMode == InputMode.Gamepad)
+            var buttonDetected = ButtonType.NONE;
+            if (GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed)
             {
-                ReadGamepadInputs();
+                buttonDetected = ButtonType.UP;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.DOWN;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.LEFT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.RIGHT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.A;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.B;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.X;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.Y;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.L;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.R;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.SELECT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.START;
             }
 
-            foreach (var button in _buttonInfos)
+            if (buttonDetected != ButtonType.NONE)
             {
-                _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
-            }
-            _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
-            _purgeTimer += gameTime.ElapsedGameTime;
-            if (_purgeTimer.Milliseconds > 200)
-            {
-                foreach (var button in _buttonInfos.Values)
+                _listeningMapping.MappedButtonType = buttonDetected;
+                _listeningButton.Text = buttonDetected.ToString();
+
+                foreach( var mapping in _activeGamepadConfig.ButtonMappings )
                 {
-                    button.RemoveOldStateChanges(_config.DisplayConfig.DisplaySeconds + 1);
+                    if( mapping == _listeningMapping )
+                    {
+                        continue;
+                    }
+                    if( mapping.MappedButtonType == buttonDetected )
+                    {
+                        mapping.MappedButtonType = ButtonType.NONE;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if( textBox != null )
+                        {
+                            textBox.Text = mapping.MappedButtonType.ToString();
+                        }
+                    }
                 }
-                _purgeTimer = TimeSpan.Zero;
+                _listeningForInput = false;
             }
-
-            switch (_config.DisplayConfig.Layout)
-            {
-                case LayoutStyle.Horizontal:
-                    {
-                        BuildRects();
-                        break;
-                    }
-                case LayoutStyle.Vertical:
-                    {
-                        BuildVerticalRects();
-                        break;
-                    }
-            }
-            
-            base.Update(gameTime);
         }
 
         private void ReadGamepadInputs()
@@ -1010,7 +1256,7 @@ namespace InputVisualizer
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
-            switch( _config.DisplayConfig.Layout )
+            switch (_config.DisplayConfig.Layout)
             {
                 case LayoutStyle.Horizontal:
                     {
