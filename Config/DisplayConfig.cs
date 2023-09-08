@@ -5,11 +5,11 @@ namespace InputVisualizer.Config
 {
     public class DisplayConfig
     {
-        public Color BackgroundColor { get; set; }
-        public bool DisplayDuration { get; set; }
-        public int MinDisplayDuration { get; set; }
-        public bool DisplayFrequency { get; set; }
-        public int MinDisplayFrequency {  get; set; }
-        public int DisplaySeconds { get; set; }
+        public Color BackgroundColor { get; set; } = Color.Black;
+        public bool DisplayDuration { get; set; } = true;
+        public int MinDisplayDuration { get; set; } = 2;
+        public bool DisplayFrequency { get; set; } = true;
+        public int MinDisplayFrequency { get; set; } = 5;
+        public int DisplaySeconds { get; set; } = 4;
     }
 }

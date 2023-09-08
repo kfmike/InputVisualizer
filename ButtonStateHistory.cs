@@ -7,7 +7,6 @@ namespace InputVisualizer
 {
     public class ButtonStateHistory
     {
-        public static int MAX_AGE = 5; //anything older than 10 seconds just remove from the list
         public List<ButtonStateValue> StateChangeHistory { get; private set; } = new List<ButtonStateValue>();
         public Color Color { get; set; }
         public string Label { get; set; }
@@ -23,16 +22,16 @@ namespace InputVisualizer
             StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
         }
 
-        public void RemoveOldStateChanges()
+        public void RemoveOldStateChanges( int maxAgeSeconds )
         {
             var removeItems = new List<ButtonStateValue>();
             foreach (var change in StateChangeHistory)
             {
-                if (change.Completed && change.EndTime < DateTime.Now.AddSeconds(-MAX_AGE))
+                if (change.Completed && change.EndTime < DateTime.Now.AddSeconds(-maxAgeSeconds))
                 {
                     removeItems.Add(change);
                 }
-                if( !change.IsPressed && change.StartTime < DateTime.Now.AddSeconds(-MAX_AGE) )
+                if( !change.IsPressed && change.StartTime < DateTime.Now.AddSeconds(-maxAgeSeconds) )
                 {
                     removeItems.Add(change);
                 }
