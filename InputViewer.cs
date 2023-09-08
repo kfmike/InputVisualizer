@@ -25,9 +25,7 @@ namespace InputVisualizer
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        private const int MAX_SECONDS = 4;
         private const float PIXELS_PER_MILLISECOND = 0.05f;
-        private const int LINE_LENGTH = 200;
         private const int ROW_HEIGHT = 16;
 
         private BitmapFont _bitmapFont;
@@ -67,7 +65,7 @@ namespace InputVisualizer
             InitInputSource();
             InitViewer();
             InitGui();
-            
+
             base.Initialize();
         }
 
@@ -81,7 +79,6 @@ namespace InputVisualizer
                 ColumnSpacing = 8,
                 Padding = new Thickness(3),
                 Margin = new Thickness(3),
-                HorizontalAlignment = HorizontalAlignment.Right
             };
 
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
@@ -89,17 +86,9 @@ namespace InputVisualizer
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var inputSourceLabel = new Label
-            {
-                Id = "inputSourceLabel",
-                Text = "Input",
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Padding = new Thickness(2)
-            };
-            grid.Widgets.Add(inputSourceLabel);
             var inputSourceCombo = new ComboBox
             {
-                GridColumn = 1,
+                GridColumn = 0,
                 GridRow = 0,
                 Padding = new Thickness(2),
             };
@@ -128,9 +117,9 @@ namespace InputVisualizer
 
             var configureInputButton = new TextButton
             {
-                GridColumn = 2,
+                GridColumn = 1,
                 GridRow = 0,
-                Text = "Configure",
+                Text = "Input",
                 Padding = new Thickness(2)
             };
 
@@ -147,6 +136,19 @@ namespace InputVisualizer
             };
 
             grid.Widgets.Add(configureInputButton);
+
+            var configureDisplayButton = new TextButton
+            {
+                GridColumn = 2,
+                GridRow = 0,
+                Text = "Display",
+                Padding = new Thickness(2)
+            };
+            configureDisplayButton.Click += (s, a) =>
+            {
+                ShowConfigureDisplayDialog();
+            };
+            grid.Widgets.Add(configureDisplayButton);
 
             _desktop = new Desktop();
             _desktop.Root = grid;
@@ -216,7 +218,7 @@ namespace InputVisualizer
                 GridColumn = 2,
                 GridColumnSpan = 2,
             };
-            
+
             foreach (RetroSpyControllerType value in Enum.GetValues(typeof(RetroSpyControllerType)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
@@ -267,7 +269,7 @@ namespace InputVisualizer
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
             {
-                if( !dialog.Result )
+                if (!dialog.Result)
                 {
                     return;
                 }
@@ -280,11 +282,11 @@ namespace InputVisualizer
             dialog.ShowModal(_desktop);
         }
 
-        private void DrawRetroSpyButtonMappingSet( GamepadButtonMappingSet mappingSet, Grid grid, List<Widget> currentWidgets )
+        private void DrawRetroSpyButtonMappingSet(GamepadButtonMappingSet mappingSet, Grid grid, List<Widget> currentWidgets)
         {
             var currGridRow = 3;
 
-            foreach( var widget in currentWidgets )
+            foreach (var widget in currentWidgets)
             {
                 grid.Widgets.Remove(widget);
             }
@@ -343,10 +345,152 @@ namespace InputVisualizer
                 currGridRow++;
             }
 
-            foreach( var widget in currentWidgets )
+            foreach (var widget in currentWidgets)
             {
                 grid.AddChild(widget);
             }
+        }
+
+        private void ShowConfigureDisplayDialog()
+        {
+            var dialog = new Dialog
+            {
+                Title = "Display Config"
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var label1 = new Label
+            {
+                Text = "Display Seconds:",
+            };
+            grid.Widgets.Add(label1);
+
+            var displaySecondsText = new TextBox()
+            {
+                GridRow = 0,
+                GridColumn = 1,
+                Text = _config.DisplayConfig.DisplaySeconds.ToString(),
+                Width = 50
+            };
+            grid.Widgets.Add(displaySecondsText);
+
+            var label2 = new Label
+            {
+                Text = "Show Duration Min Seconds:",
+                GridRow = 1
+            };
+            grid.Widgets.Add(label2);
+            var pressThresholdText = new TextBox()
+            {
+                GridRow = 1,
+                GridColumn = 1,
+                Text = _config.DisplayConfig.MinDisplayDuration.ToString(),
+                Width = 50
+            };
+            grid.Widgets.Add(pressThresholdText);
+
+            var label3 = new Label
+            {
+                Text = "Show Frequency Min Value:",
+                GridRow = 2
+            };
+            grid.Widgets.Add(label3);
+            var frequencyThresholdText = new TextBox()
+            {
+                GridRow = 2,
+                GridColumn = 1,
+                Text = _config.DisplayConfig.MinDisplayFrequency.ToString(),
+                Width = 50
+            };
+            grid.Widgets.Add(frequencyThresholdText);
+
+            var label4 = new Label
+            {
+                Text = "Display Durations:",
+                GridRow = 3
+            };
+            grid.Widgets.Add(label4);
+            var displayDurationCheck = new CheckBox()
+            {
+                GridRow = 3,
+                GridColumn = 1,
+                IsChecked = _config.DisplayConfig.DisplayDuration,
+            };
+            grid.Widgets.Add(displayDurationCheck);
+
+            var label5 = new Label
+            {
+                Text = "Display Frequency Last Second:",
+                GridRow = 4
+            };
+            grid.Widgets.Add(label5);
+            var displayFrequencyCheck = new CheckBox()
+            {
+                GridRow = 4,
+                GridColumn = 1,
+                IsChecked = _config.DisplayConfig.DisplayFrequency,
+            };
+            grid.Widgets.Add(displayFrequencyCheck);
+
+            var label6 = new Label
+            {
+                Text = "Background:",
+                GridRow = 5
+            };
+            grid.Widgets.Add(label6);
+            var colorButton = new TextButton
+            {
+                GridRow = 5,
+                GridColumn = 1,
+                Text = "Color",
+                Padding = new Thickness(2),
+                TextColor = _config.DisplayConfig.BackgroundColor,
+            };
+            colorButton.Click += (s, e) =>
+            {
+                ChooseBackgroundColor(colorButton);
+            };
+            grid.Widgets.Add(colorButton);
+
+            dialog.Content = grid;
+            dialog.Closed += (s, a) =>
+            {
+                if (!dialog.Result)
+                {
+                    return;
+                }
+                if( Int32.TryParse(displaySecondsText.Text, out var displaySeconds))
+                {
+                    _config.DisplayConfig.DisplaySeconds = displaySeconds < 1 ? 1 : displaySeconds;
+                }
+                if (Int32.TryParse(pressThresholdText.Text, out var pressThresholdSeconds))
+                {
+                    _config.DisplayConfig.MinDisplayDuration = pressThresholdSeconds < 1 ? 1 : pressThresholdSeconds;
+                }
+                if (Int32.TryParse(frequencyThresholdText.Text, out var frequencyThresholdValue))
+                {
+                    _config.DisplayConfig.MinDisplayFrequency = frequencyThresholdValue < 1 ? 1 : frequencyThresholdValue;
+                }
+                _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
+                _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
+                _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
+
+                SaveConfig();
+            };
+            dialog.ShowModal(_desktop);
         }
 
         private void ShowConfigureGamePadDialog()
@@ -354,7 +498,7 @@ namespace InputVisualizer
 
         }
 
-        public void ChooseColor( GamepadButtonMapping mapping, TextButton colorButton )
+        public void ChooseColor(GamepadButtonMapping mapping, TextButton colorButton)
         {
             var colorWindow = new ColorPickerDialog();
             colorWindow.Color = colorButton.TextColor;
@@ -371,7 +515,23 @@ namespace InputVisualizer
             };
         }
 
-        private void SetCurrentInputSource( string id )
+        public void ChooseBackgroundColor(TextButton colorButton)
+        {
+            var colorWindow = new ColorPickerDialog();
+            colorWindow.Color = colorButton.TextColor;
+            colorWindow.ShowModal(_desktop);
+
+            colorWindow.Closed += (s, a) =>
+            {
+                if (!colorWindow.Result)
+                {
+                    return;
+                }
+                colorButton.TextColor = colorWindow.Color;
+            };
+        }
+
+        private void SetCurrentInputSource(string id)
         {
             _config.CurrentInputSource = id;
             SaveConfig();
@@ -403,18 +563,20 @@ namespace InputVisualizer
             _pixel = new Texture2D(_graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
             _pixel.SetData(new Color[] { Color.White });
             _horizontalAngle = (float)0.0f;
-            _minAge = DateTime.Now.AddSeconds(-MAX_SECONDS);
+            _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
         }
 
         private void LoadConfig()
         {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.txt");
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
             if (File.Exists(path))
             {
                 var configTxt = File.ReadAllText(path);
                 _config = JsonConvert.DeserializeObject<ViewerConfig>(configTxt) ?? new ViewerConfig();
             }
             else { _config = new ViewerConfig(); }
+
+            if( _config.DisplayConfig.DisplaySeconds < 0 ) { _config.DisplayConfig.DisplaySeconds = 1; }
 
             foreach (var kvp in _systemGamePads)
             {
@@ -423,22 +585,22 @@ namespace InputVisualizer
                 {
                     gamepadConfig = _config.CreateGamepadConfig(kvp.Key, GamepadStyle.XBOX);
                 }
-                if( !gamepadConfig.ButtonMappings.Any() )
+                if (!gamepadConfig.ButtonMappings.Any())
                 {
                     gamepadConfig.GenerateButtonMappings();
                 }
             }
 
             _config.RetroSpyConfig.GenerateButtonMappings();
-            
+
             SaveConfig();
             _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
         }
 
         private void SaveConfig()
         {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.txt");
-            File.WriteAllText(path, JsonConvert.SerializeObject(_config));
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
+            File.WriteAllText(path, JsonConvert.SerializeObject(_config, Formatting.Indented));
         }
 
         private void InitInputSource()
@@ -447,7 +609,7 @@ namespace InputVisualizer
             {
                 if (!string.IsNullOrEmpty(_config.RetroSpyConfig.ComPortName))
                 {
-                    if( _serialReader != null )
+                    if (_serialReader != null)
                     {
                         _serialReader.Finish();
                     }
@@ -457,13 +619,13 @@ namespace InputVisualizer
             }
             else if (_currentInputMode == InputMode.Gamepad)
             {
-                if( string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource ))
+                if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
                 {
-                    if( _config.GamepadConfigs.Any())
+                    if (_config.GamepadConfigs.Any())
                     {
-                        foreach( var gamepadConfig in _config.GamepadConfigs)
+                        foreach (var gamepadConfig in _config.GamepadConfigs)
                         {
-                            if( _systemGamePads.Keys.Contains(gamepadConfig.Id))
+                            if (_systemGamePads.Keys.Contains(gamepadConfig.Id))
                             {
                                 _config.CurrentInputSource = gamepadConfig.Id;
                                 _activeGamepadConfig = gamepadConfig;
@@ -472,9 +634,9 @@ namespace InputVisualizer
                         }
                     }
                 }
-                else if( _systemGamePads.Keys.Contains(_config.CurrentInputSource))
+                else if (_systemGamePads.Keys.Contains(_config.CurrentInputSource))
                 {
-                    _activeGamepadConfig = _config.GamepadConfigs.First( c => c.Id == _config.CurrentInputSource );
+                    _activeGamepadConfig = _config.GamepadConfigs.First(c => c.Id == _config.CurrentInputSource);
                 }
                 _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
             }
@@ -499,7 +661,7 @@ namespace InputVisualizer
 
         private void InitButtons()
         {
-            switch( _currentInputMode )
+            switch (_currentInputMode)
             {
                 case InputMode.RetroSpy:
                     {
@@ -526,22 +688,14 @@ namespace InputVisualizer
         {
             _buttonInfos.Clear();
 
-            switch( _config.RetroSpyConfig.ControllerType)
+            switch (_config.RetroSpyConfig.ControllerType)
             {
                 case RetroSpyControllerType.NES:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where( m => m.IsVisible ).OrderBy(m => m.Order))
+                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
                             _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
                         }
-                        //_buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
-                        //_buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
-                        //_buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
-                        //_buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
-                        //_buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
-                        //_buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "A" });
-                        //_buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
-                        //_buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
                         break;
                     }
                 case RetroSpyControllerType.SNES:
@@ -550,28 +704,15 @@ namespace InputVisualizer
                         {
                             _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
                         }
-                        //_buttonInfos.Add("UP", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "U" });
-                        //_buttonInfos.Add("DOWN", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "D" });
-                        //_buttonInfos.Add("LEFT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "L" });
-                        //_buttonInfos.Add("RIGHT", new ButtonStateHistory() { Color = Color.DarkSeaGreen, Label = "R" });
-                        //_buttonInfos.Add("Y", new ButtonStateHistory() { Color = Color.DarkGreen, Label = "Y" });
-                        //_buttonInfos.Add("B", new ButtonStateHistory() { Color = Color.Gold, Label = "B" });
-                        //_buttonInfos.Add("X", new ButtonStateHistory() { Color = Color.DeepSkyBlue, Label = "X" });
-                        //_buttonInfos.Add("A", new ButtonStateHistory() { Color = Color.DarkRed, Label = "A" });
-                        //_buttonInfos.Add("L", new ButtonStateHistory() { Color = Color.DarkBlue, Label = "L" });
-                        //_buttonInfos.Add("R", new ButtonStateHistory() { Color = Color.DarkBlue, Label = "R" });
-                        //_buttonInfos.Add("SELECT", new ButtonStateHistory() { Color = Color.DimGray, Label = "E" });
-                        //_buttonInfos.Add("START", new ButtonStateHistory() { Color = Color.DimGray, Label = "S" });
                         break;
                     }
             }
-            
         }
 
         private void InitGamepadButtons()
         {
             _buttonInfos.Clear();
-            foreach( var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy( m => m.Order ) )
+            foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
                 _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
             }
@@ -580,9 +721,6 @@ namespace InputVisualizer
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            
-            // TODO: use this.Content to load your game content here
         }
 
         protected override void Update(GameTime gameTime)
@@ -592,7 +730,7 @@ namespace InputVisualizer
                 Exit();
             }
 
-            if ( _currentInputMode == InputMode.Gamepad)
+            if (_currentInputMode == InputMode.Gamepad)
             {
                 ReadGamepadInputs();
             }
@@ -601,13 +739,13 @@ namespace InputVisualizer
             {
                 _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
             }
-            _minAge = DateTime.Now.AddSeconds(-MAX_SECONDS);
+            _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
             _purgeTimer += gameTime.ElapsedGameTime;
             if (_purgeTimer.Milliseconds > 200)
             {
                 foreach (var button in _buttonInfos.Values)
                 {
-                    button.RemoveOldStateChanges();
+                    button.RemoveOldStateChanges(_config.DisplayConfig.DisplaySeconds + 1);
                 }
                 _purgeTimer = TimeSpan.Zero;
             }
@@ -739,25 +877,29 @@ namespace InputVisualizer
             var yInc = ROW_HEIGHT;
             var yOffset = 2;
 
-            var now = DateTime.Now.AddMilliseconds(-2);
+            var lineStart = DateTime.Now;
+
             foreach (var kvp in _buttonInfos)
             {
                 _onRects[kvp.Key].Clear();
                 var info = kvp.Value;
-
                 var baseX = 41;
 
-                var currX = baseX;
-                var pixelsUsed = 0;
                 for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
                 {
-                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? now : info.StateChangeHistory[i].EndTime;
+                    if (!info.StateChangeHistory[i].IsPressed)
+                    {
+                        continue;
+                    }
 
-                    if (endTime < _minAge || pixelsUsed >= LINE_LENGTH)
+                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
+
+                    if (endTime < _minAge)
                     {
                         break;
                     }
 
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * PIXELS_PER_MILLISECOND;
                     var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
                     var lengthInPixels = (int)(lengthInMs * PIXELS_PER_MILLISECOND);
@@ -766,22 +908,12 @@ namespace InputVisualizer
                         lengthInPixels = 1;
                     }
 
-                    pixelsUsed += lengthInPixels;
-
-                    if (!info.StateChangeHistory[i].IsPressed)
-                    {
-                        currX += lengthInPixels;
-                        continue;
-                    }
-
                     var rec = new Rectangle();
-                    rec.X = currX;
+                    rec.X = baseX + (int)xOffset;
                     rec.Y = yPos - 2 - yOffset - 1;
                     rec.Width = lengthInPixels;
                     rec.Height = yOffset * 2 + 1;
                     _onRects[kvp.Key].Add(rec);
-
-                    currX += lengthInPixels;
                 }
                 yPos += yInc;
             }
@@ -789,10 +921,9 @@ namespace InputVisualizer
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
-            //var matrix = Matrix.CreateScale(1.f, 1.5f, 1.0f);
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend /*transformMatrix: matrix */ );
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
             DrawButtons();
             DrawQueues();
             _spriteBatch.End();
@@ -819,7 +950,8 @@ namespace InputVisualizer
             var yPos = 52;
             var yInc = ROW_HEIGHT;
             var baseX = 41;
-            var infoX = baseX + LINE_LENGTH + 5;
+            var lineLength = (int)(_config.DisplayConfig.DisplaySeconds * 1000 * PIXELS_PER_MILLISECOND);
+            var infoX = baseX + lineLength + 5;
 
             foreach (var kvp in _buttonInfos)
             {
@@ -843,7 +975,7 @@ namespace InputVisualizer
                 //draw entire off line
                 rec.X = baseX;
                 rec.Y = yPos - 3;
-                rec.Width = LINE_LENGTH - 1;
+                rec.Width = lineLength - 1;
                 rec.Height = 1;
                 _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
 
@@ -861,16 +993,22 @@ namespace InputVisualizer
                     rec.Height = 12;
                     _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
-                    var elapsed = info.PressedElapsed();
-                    if (elapsed.TotalSeconds > 2)
+                    if (_config.DisplayConfig.DisplayDuration)
                     {
-                        _spriteBatch.DrawString(_bitmapFont, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 17), info.Color);
+                        var elapsed = info.PressedElapsed();
+                        if (elapsed.TotalSeconds > _config.DisplayConfig.MinDisplayDuration)
+                        {
+                            _spriteBatch.DrawString(_bitmapFont, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 17), info.Color);
+                        }
                     }
                 }
 
-                if (_frequencyDict[kvp.Key] >= 4)
+                if (_config.DisplayConfig.DisplayFrequency)
                 {
-                    _spriteBatch.DrawString(_bitmapFont, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 17), info.Color);
+                    if (_frequencyDict[kvp.Key] >= _config.DisplayConfig.MinDisplayFrequency)
+                    {
+                        _spriteBatch.DrawString(_bitmapFont, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 17), info.Color);
+                    }
                 }
                 yPos += yInc;
             }
