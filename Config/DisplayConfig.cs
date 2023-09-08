@@ -11,5 +11,6 @@ namespace InputVisualizer.Config
         public bool DisplayFrequency { get; set; } = true;
         public int MinDisplayFrequency { get; set; } = 5;
         public int DisplaySeconds { get; set; } = 4;
+        public LayoutStyle Layout { get; set; } = LayoutStyle.Horizontal;
     }
 }

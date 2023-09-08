@@ -465,6 +465,29 @@ namespace InputVisualizer
             };
             grid.Widgets.Add(colorButton);
 
+            var label7 = new Label
+            {
+                Text = "Layout:",
+                GridRow = 6,
+            };
+            grid.Widgets.Add(label7);
+            var layoutComboBox = new ComboBox()
+            {
+                GridRow = 6,
+                GridColumn = 1,
+            };
+
+            foreach (LayoutStyle value in Enum.GetValues(typeof(LayoutStyle)))
+            {
+                var item = new ListItem(value.ToString(), Color.White, value);
+                layoutComboBox.Items.Add(item);
+                if (_config.DisplayConfig.Layout == value)
+                {
+                    layoutComboBox.SelectedItem = item;
+                }
+            }
+            grid.Widgets.Add(layoutComboBox);
+
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
             {
@@ -487,6 +510,7 @@ namespace InputVisualizer
                 _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
                 _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
+                _config.DisplayConfig.Layout = (LayoutStyle)layoutComboBox.SelectedItem.Tag;
 
                 SaveConfig();
             };
@@ -749,7 +773,21 @@ namespace InputVisualizer
                 }
                 _purgeTimer = TimeSpan.Zero;
             }
-            BuildRects();
+
+            switch (_config.DisplayConfig.Layout)
+            {
+                case LayoutStyle.Horizontal:
+                    {
+                        BuildRects();
+                        break;
+                    }
+                case LayoutStyle.Vertical:
+                    {
+                        BuildVerticalRects();
+                        break;
+                    }
+            }
+            
             base.Update(gameTime);
         }
 
@@ -919,13 +957,73 @@ namespace InputVisualizer
             }
         }
 
+        private void BuildVerticalRects()
+        {
+            var xPos = 18;
+            var xInc = ROW_HEIGHT;
+            var yOffset = 2;
+
+            var lineStart = DateTime.Now;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                _onRects[kvp.Key].Clear();
+                var info = kvp.Value;
+                var baseY = 73;
+
+                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
+                {
+                    if (!info.StateChangeHistory[i].IsPressed)
+                    {
+                        continue;
+                    }
+
+                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
+
+                    if (endTime < _minAge)
+                    {
+                        break;
+                    }
+
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * PIXELS_PER_MILLISECOND;
+                    var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
+                    var lengthInMs = (endTime - startTime).TotalMilliseconds;
+                    var lengthInPixels = (int)(lengthInMs * PIXELS_PER_MILLISECOND);
+                    if (lengthInPixels < 1)
+                    {
+                        lengthInPixels = 1;
+                    }
+
+                    var rec = new Rectangle();
+                    rec.Y = baseY + (int)xOffset;
+                    rec.X = xPos - 2 - yOffset - 1;
+                    rec.Height = lengthInPixels;
+                    rec.Width = yOffset * 2 + 1;
+                    _onRects[kvp.Key].Add(rec);
+                }
+                xPos += xInc;
+            }
+        }
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
-            DrawButtons();
-            DrawQueues();
+            switch( _config.DisplayConfig.Layout )
+            {
+                case LayoutStyle.Horizontal:
+                    {
+                        DrawButtons();
+                        DrawQueues();
+                        break;
+                    }
+                case LayoutStyle.Vertical:
+                    {
+                        DrawVerticalButtons();
+                        break;
+                    }
+            }
             _spriteBatch.End();
             _desktop.Render();
 
@@ -942,6 +1040,61 @@ namespace InputVisualizer
             {
                 _spriteBatch.DrawString(_bitmapFont, kvp.Value.Label, new Vector2(rightMargin, yPos), Color.White);
                 yPos += yInc;
+            }
+        }
+
+        private void DrawVerticalButtons()
+        {
+            var yPos = 35;
+            var xInc = ROW_HEIGHT;
+            var xPos = 10;
+            var rec = Rectangle.Empty;
+            var lineLength = (int)(_config.DisplayConfig.DisplaySeconds * 1000 * PIXELS_PER_MILLISECOND);
+
+            foreach (var kvp in _buttonInfos)
+            {
+                var info = kvp.Value;
+                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
+
+                _spriteBatch.DrawString(_bitmapFont, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
+
+                //empty button press rectangle
+                rec.X = xPos - 1;
+                rec.Y = yPos + 25;
+                rec.Width = 13;
+                rec.Height = 13;
+                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                rec.X = xPos;
+                rec.Y = yPos + 26;
+                rec.Width = 11;
+                rec.Height = 11;
+                _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+
+                //draw entire off line
+                rec.X = xPos + 5;
+                rec.Y = yPos + 38;
+                rec.Height = lineLength - 1;
+                rec.Width = 1;
+                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+
+
+                foreach (var rect in _onRects[kvp.Key])
+                {
+                    _spriteBatch.Draw(_pixel, rect, null, info.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                if (info.IsPressed())
+                {
+                    //fill in button rect
+                    rec.X = xPos - 1;
+                    rec.Y = yPos + 25;
+                    rec.Width = 12;
+                    rec.Height = 12;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                xPos += xInc;
             }
         }
 
