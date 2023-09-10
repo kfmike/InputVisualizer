@@ -54,8 +54,8 @@ namespace InputVisualizer
         public InputViewer()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 624;
-            _graphics.PreferredBackBufferHeight = 520;
+            _graphics.PreferredBackBufferWidth = 824;
+            _graphics.PreferredBackBufferHeight = 620;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
@@ -266,7 +266,7 @@ namespace InputVisualizer
                     messageBox.ShowModal(_desktop);
                     a.Cancel = true;
                 }
-                else if( _listeningCancelPressed )
+                else if (_listeningCancelPressed)
                 {
                     a.Cancel = true;
                     _listeningCancelPressed = false;
@@ -403,7 +403,10 @@ namespace InputVisualizer
                 {
                     return;
                 }
-                _config.RetroSpyConfig.ComPortName = (string)comPortComboBox.SelectedItem.Tag;
+                if (comPortComboBox.SelectedItem != null)
+                {
+                    _config.RetroSpyConfig.ComPortName = (string)comPortComboBox.SelectedItem.Tag;
+                }
                 _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
 
                 SaveConfig();
@@ -609,15 +612,30 @@ namespace InputVisualizer
             };
             grid.Widgets.Add(displayFrequencyCheck);
 
+            var label8 = new Label
+            {
+                Text = "Show Idle Lines:",
+                GridRow = 5
+            };
+            grid.Widgets.Add(label8);
+
+            var displayIdleLindesCheck = new CheckBox()
+            {
+                GridRow = 5,
+                GridColumn = 1,
+                IsChecked = _config.DisplayConfig.DrawIdleLines
+            };
+            grid.Widgets.Add(displayIdleLindesCheck);
+
             var label6 = new Label
             {
                 Text = "Background:",
-                GridRow = 5
+                GridRow = 6
             };
             grid.Widgets.Add(label6);
             var colorButton = new TextButton
             {
-                GridRow = 5,
+                GridRow = 6,
                 GridColumn = 1,
                 Text = "Color",
                 Padding = new Thickness(2),
@@ -632,12 +650,12 @@ namespace InputVisualizer
             var label7 = new Label
             {
                 Text = "Layout:",
-                GridRow = 6,
+                GridRow = 7,
             };
             grid.Widgets.Add(label7);
             var layoutComboBox = new ComboBox()
             {
-                GridRow = 6,
+                GridRow = 7,
                 GridColumn = 1,
             };
 
@@ -673,6 +691,7 @@ namespace InputVisualizer
                 }
                 _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
+                _config.DisplayConfig.DrawIdleLines = displayIdleLindesCheck.IsChecked;
                 _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
                 _config.DisplayConfig.Layout = (LayoutStyle)layoutComboBox.SelectedItem.Tag;
 
@@ -685,6 +704,7 @@ namespace InputVisualizer
         {
             var colorWindow = new ColorPickerDialog();
             colorWindow.Color = colorButton.TextColor;
+            colorWindow.ColorPickerPanel._saveColor.Visible = false;
             colorWindow.ShowModal(_desktop);
 
             colorWindow.Closed += (s, a) =>
@@ -802,6 +822,11 @@ namespace InputVisualizer
             }
             else if (_currentInputMode == InputMode.Gamepad)
             {
+                if (_serialReader != null)
+                {
+                    _serialReader.Finish();
+                    _serialReader = null;
+                }
                 if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
                 {
                     if (_config.GamepadConfigs.Any())
@@ -1017,17 +1042,17 @@ namespace InputVisualizer
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningButton.Text = buttonDetected.ToString();
 
-                foreach( var mapping in _activeGamepadConfig.ButtonMappings )
+                foreach (var mapping in _activeGamepadConfig.ButtonMappings)
                 {
-                    if( mapping == _listeningMapping )
+                    if (mapping == _listeningMapping)
                     {
                         continue;
                     }
-                    if( mapping.MappedButtonType == buttonDetected )
+                    if (mapping.MappedButtonType == buttonDetected)
                     {
                         mapping.MappedButtonType = ButtonType.NONE;
                         var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
-                        if( textBox != null )
+                        if (textBox != null)
                         {
                             textBox.Text = mapping.MappedButtonType.ToString();
                         }
@@ -1271,7 +1296,15 @@ namespace InputVisualizer
                     }
             }
             _spriteBatch.End();
-            _desktop.Render();
+
+            try
+            {
+                _desktop.Render();
+            }
+            catch (Exception)
+            {
+
+            }
 
             base.Draw(gameTime);
         }
@@ -1318,12 +1351,14 @@ namespace InputVisualizer
                 _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
                 //draw entire off line
-                rec.X = xPos + 5;
-                rec.Y = yPos + 38;
-                rec.Height = lineLength - 1;
-                rec.Width = 1;
-                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
-
+                if (_config.DisplayConfig.DrawIdleLines)
+                {
+                    rec.X = xPos + 5;
+                    rec.Y = yPos + 38;
+                    rec.Height = lineLength - 1;
+                    rec.Width = 1;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
 
                 foreach (var rect in _onRects[kvp.Key])
                 {
@@ -1372,11 +1407,14 @@ namespace InputVisualizer
                 _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
                 //draw entire off line
-                rec.X = baseX;
-                rec.Y = yPos - 3;
-                rec.Width = lineLength - 1;
-                rec.Height = 1;
-                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+                if (_config.DisplayConfig.DrawIdleLines)
+                {
+                    rec.X = baseX;
+                    rec.Y = yPos - 3;
+                    rec.Width = lineLength - 1;
+                    rec.Height = 1;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
 
                 foreach (var rect in _onRects[kvp.Key])
                 {
