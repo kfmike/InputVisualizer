@@ -22,16 +22,16 @@ namespace InputVisualizer
             StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
         }
 
-        public void RemoveOldStateChanges( int maxAgeSeconds )
+        public void RemoveOldStateChanges( double ms )
         {
             var removeItems = new List<ButtonStateValue>();
             foreach (var change in StateChangeHistory)
             {
-                if (change.Completed && change.EndTime < DateTime.Now.AddSeconds(-maxAgeSeconds))
+                if (change.Completed && change.EndTime < DateTime.Now.AddMilliseconds(-ms))
                 {
                     removeItems.Add(change);
                 }
-                if( !change.IsPressed && change.StartTime < DateTime.Now.AddSeconds(-maxAgeSeconds) )
+                if( !change.IsPressed && change.StartTime < DateTime.Now.AddMilliseconds(-ms) )
                 {
                     removeItems.Add(change);
                 }

@@ -24,7 +24,7 @@ namespace InputVisualizer
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        private const float PIXELS_PER_MILLISECOND = 0.05f;
+        private float _pixelsPerMs = 0.05f;
         private const int ROW_HEIGHT = 16;
 
         private BitmapFont _bitmapFont;
@@ -541,28 +541,65 @@ namespace InputVisualizer
 
             var label1 = new Label
             {
-                Text = "Display Seconds:",
+                Text = "Line Length:",
             };
             grid.Widgets.Add(label1);
 
-            var displaySecondsText = new TextBox()
+            var displayWidthText = new TextBox()
             {
                 GridRow = 0,
                 GridColumn = 1,
-                Text = _config.DisplayConfig.DisplaySeconds.ToString(),
+                Text = _config.DisplayConfig.LineLength.ToString(),
                 Width = 50
             };
-            grid.Widgets.Add(displaySecondsText);
+            grid.Widgets.Add(displayWidthText);
+
+            var labelSpeed = new Label
+            {
+                Text = "Speed:",
+                GridRow = 1
+            };
+            grid.Widgets.Add(labelSpeed);
+
+            var displaySpeedSpin = new HorizontalSlider()
+            {
+                GridRow = 1,
+                GridColumn = 1,
+                Value = _config.DisplayConfig.Speed,
+                Minimum = 1,
+                Maximum = 11,
+
+                Width = 50
+            };
+            grid.Widgets.Add(displaySpeedSpin);
+
+            var labelTurnOffLineSpeed = new Label
+            {
+                Text = "Dim Line Delay:",
+                GridRow = 2
+            };
+            grid.Widgets.Add(labelTurnOffLineSpeed);
+
+            var turnOffLineSpeedSpin = new HorizontalSlider()
+            {
+                GridRow = 2,
+                GridColumn = 1,
+                Value = _config.DisplayConfig.TurnOffLineSpeed,
+                Minimum = 0,
+                Maximum = 2000,
+                Width = 50
+            };
+            grid.Widgets.Add(turnOffLineSpeedSpin);
 
             var label2 = new Label
             {
                 Text = "Show Duration Min Seconds:",
-                GridRow = 1
+                GridRow = 3
             };
             grid.Widgets.Add(label2);
             var pressThresholdText = new TextBox()
             {
-                GridRow = 1,
+                GridRow = 3,
                 GridColumn = 1,
                 Text = _config.DisplayConfig.MinDisplayDuration.ToString(),
                 Width = 50
@@ -572,12 +609,12 @@ namespace InputVisualizer
             var label3 = new Label
             {
                 Text = "Show Frequency Min Value:",
-                GridRow = 2
+                GridRow = 4
             };
             grid.Widgets.Add(label3);
             var frequencyThresholdText = new TextBox()
             {
-                GridRow = 2,
+                GridRow = 4,
                 GridColumn = 1,
                 Text = _config.DisplayConfig.MinDisplayFrequency.ToString(),
                 Width = 50
@@ -587,12 +624,12 @@ namespace InputVisualizer
             var label4 = new Label
             {
                 Text = "Display Durations:",
-                GridRow = 3
+                GridRow = 5
             };
             grid.Widgets.Add(label4);
             var displayDurationCheck = new CheckBox()
             {
-                GridRow = 3,
+                GridRow = 5,
                 GridColumn = 1,
                 IsChecked = _config.DisplayConfig.DisplayDuration,
             };
@@ -601,12 +638,12 @@ namespace InputVisualizer
             var label5 = new Label
             {
                 Text = "Display Frequency Last Second:",
-                GridRow = 4
+                GridRow = 6
             };
             grid.Widgets.Add(label5);
             var displayFrequencyCheck = new CheckBox()
             {
-                GridRow = 4,
+                GridRow = 6,
                 GridColumn = 1,
                 IsChecked = _config.DisplayConfig.DisplayFrequency,
             };
@@ -615,13 +652,13 @@ namespace InputVisualizer
             var label8 = new Label
             {
                 Text = "Show Idle Lines:",
-                GridRow = 5
+                GridRow = 7
             };
             grid.Widgets.Add(label8);
 
             var displayIdleLindesCheck = new CheckBox()
             {
-                GridRow = 5,
+                GridRow = 7,
                 GridColumn = 1,
                 IsChecked = _config.DisplayConfig.DrawIdleLines
             };
@@ -630,12 +667,12 @@ namespace InputVisualizer
             var label6 = new Label
             {
                 Text = "Background:",
-                GridRow = 6
+                GridRow = 8
             };
             grid.Widgets.Add(label6);
             var colorButton = new TextButton
             {
-                GridRow = 6,
+                GridRow = 8,
                 GridColumn = 1,
                 Text = "Color",
                 Padding = new Thickness(2),
@@ -650,12 +687,12 @@ namespace InputVisualizer
             var label7 = new Label
             {
                 Text = "Layout:",
-                GridRow = 7,
+                GridRow = 9,
             };
             grid.Widgets.Add(label7);
             var layoutComboBox = new ComboBox()
             {
-                GridRow = 7,
+                GridRow = 9,
                 GridColumn = 1,
             };
 
@@ -677,9 +714,9 @@ namespace InputVisualizer
                 {
                     return;
                 }
-                if (Int32.TryParse(displaySecondsText.Text, out var displaySeconds))
+                if (Int32.TryParse(displayWidthText.Text, out var displayWidth))
                 {
-                    _config.DisplayConfig.DisplaySeconds = displaySeconds < 1 ? 1 : displaySeconds;
+                    _config.DisplayConfig.LineLength = displayWidth < 10 ? 1 : displayWidth;
                 }
                 if (Int32.TryParse(pressThresholdText.Text, out var pressThresholdSeconds))
                 {
@@ -689,6 +726,9 @@ namespace InputVisualizer
                 {
                     _config.DisplayConfig.MinDisplayFrequency = frequencyThresholdValue < 1 ? 1 : frequencyThresholdValue;
                 }
+                _config.DisplayConfig.Speed = displaySpeedSpin.Value;
+                _config.DisplayConfig.TurnOffLineSpeed = turnOffLineSpeedSpin.Value;
+                UpdateSpeed();
                 _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
                 _config.DisplayConfig.DrawIdleLines = displayIdleLindesCheck.IsChecked;
@@ -766,7 +806,12 @@ namespace InputVisualizer
             _pixel = new Texture2D(_graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
             _pixel.SetData(new Color[] { Color.White });
             _horizontalAngle = (float)0.0f;
-            _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
+            CalcMinAge();
+        }
+
+        private void UpdateSpeed()
+        {
+            _pixelsPerMs = 0.05f * _config.DisplayConfig.Speed;
         }
 
         private void LoadConfig()
@@ -778,8 +823,6 @@ namespace InputVisualizer
                 _config = JsonConvert.DeserializeObject<ViewerConfig>(configTxt) ?? new ViewerConfig();
             }
             else { _config = new ViewerConfig(); }
-
-            if (_config.DisplayConfig.DisplaySeconds < 0) { _config.DisplayConfig.DisplaySeconds = 1; }
 
             foreach (var kvp in _systemGamePads)
             {
@@ -794,6 +837,7 @@ namespace InputVisualizer
                 }
             }
 
+            UpdateSpeed();
             _config.RetroSpyConfig.GenerateButtonMappings();
 
             SaveConfig();
@@ -931,6 +975,13 @@ namespace InputVisualizer
             _spriteBatch = new SpriteBatch(GraphicsDevice);
         }
 
+        private float CalcMinAge()
+        {
+            var lineMs = _config.DisplayConfig.LineLength / _pixelsPerMs;
+            _minAge = DateTime.Now.AddMilliseconds(-lineMs);
+            return lineMs;
+        }
+
         protected override void Update(GameTime gameTime)
         {
             if (_listeningForInput)
@@ -948,13 +999,15 @@ namespace InputVisualizer
                 {
                     _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
                 }
-                _minAge = DateTime.Now.AddSeconds(-_config.DisplayConfig.DisplaySeconds);
+                
+                var lineMs = CalcMinAge();
+                _minAge = DateTime.Now.AddMilliseconds(-lineMs);
                 _purgeTimer += gameTime.ElapsedGameTime;
                 if (_purgeTimer.Milliseconds > 200)
                 {
                     foreach (var button in _buttonInfos.Values)
                     {
-                        button.RemoveOldStateChanges(_config.DisplayConfig.DisplaySeconds + 1);
+                        button.RemoveOldStateChanges(lineMs + _config.DisplayConfig.TurnOffLineSpeed + 1000);
                     }
                     _purgeTimer = TimeSpan.Zero;
                 }
@@ -1185,6 +1238,7 @@ namespace InputVisualizer
             var yPos = 52;
             var yInc = ROW_HEIGHT;
             var yOffset = 2;
+            var lineLength = _config.DisplayConfig.LineLength;
 
             var lineStart = DateTime.Now;
 
@@ -1208,19 +1262,29 @@ namespace InputVisualizer
                         break;
                     }
 
-                    var xOffset = (lineStart - endTime).TotalMilliseconds * PIXELS_PER_MILLISECOND;
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
                     var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (int)(lengthInMs * PIXELS_PER_MILLISECOND);
+                    var lengthInPixels = (int)(lengthInMs * _pixelsPerMs);
                     if (lengthInPixels < 1)
                     {
                         lengthInPixels = 1;
                     }
 
+                    var x = baseX + (int)xOffset;
+                    var width = lengthInPixels;
+                    var maxX = baseX + lineLength;
+
+                    if (x + width > maxX)
+                    {
+                        var overflow = (x + width) - maxX;
+                        width -= overflow;
+                    }
+
                     var rec = new Rectangle();
-                    rec.X = baseX + (int)xOffset;
+                    rec.X = x;
                     rec.Y = yPos - 2 - yOffset - 1;
-                    rec.Width = lengthInPixels;
+                    rec.Width = width;
                     rec.Height = yOffset * 2 + 1;
                     _onRects[kvp.Key].Add(rec);
                 }
@@ -1233,6 +1297,7 @@ namespace InputVisualizer
             var xPos = 18;
             var xInc = ROW_HEIGHT;
             var yOffset = 2;
+            var lineLength = _config.DisplayConfig.LineLength;
 
             var lineStart = DateTime.Now;
 
@@ -1256,19 +1321,29 @@ namespace InputVisualizer
                         break;
                     }
 
-                    var xOffset = (lineStart - endTime).TotalMilliseconds * PIXELS_PER_MILLISECOND;
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
                     var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (int)(lengthInMs * PIXELS_PER_MILLISECOND);
+                    var lengthInPixels = (int)(lengthInMs * _pixelsPerMs);
                     if (lengthInPixels < 1)
                     {
                         lengthInPixels = 1;
                     }
 
+                    var y = baseY + (int)xOffset;
+                    var height = lengthInPixels;
+                    var maxY = baseY + lineLength;
+
+                    if (y + height > maxY)
+                    {
+                        var overflow = (y + height) - maxY;
+                        height -= overflow;
+                    }
+
                     var rec = new Rectangle();
-                    rec.Y = baseY + (int)xOffset;
+                    rec.Y = y;
                     rec.X = xPos - 2 - yOffset - 1;
-                    rec.Height = lengthInPixels;
+                    rec.Height = height;
                     rec.Width = yOffset * 2 + 1;
                     _onRects[kvp.Key].Add(rec);
                 }
@@ -1328,7 +1403,7 @@ namespace InputVisualizer
             var xInc = ROW_HEIGHT;
             var xPos = 10;
             var rec = Rectangle.Empty;
-            var lineLength = (int)(_config.DisplayConfig.DisplaySeconds * 1000 * PIXELS_PER_MILLISECOND);
+            var lineLength = _config.DisplayConfig.LineLength;
 
             foreach (var kvp in _buttonInfos)
             {
@@ -1384,7 +1459,7 @@ namespace InputVisualizer
             var yPos = 52;
             var yInc = ROW_HEIGHT;
             var baseX = 41;
-            var lineLength = (int)(_config.DisplayConfig.DisplaySeconds * 1000 * PIXELS_PER_MILLISECOND);
+            var lineLength = _config.DisplayConfig.LineLength;
             var infoX = baseX + lineLength + 5;
 
             foreach (var kvp in _buttonInfos)
