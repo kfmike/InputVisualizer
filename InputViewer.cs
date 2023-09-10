@@ -28,6 +28,7 @@ namespace InputVisualizer
         private const int ROW_HEIGHT = 16;
 
         private BitmapFont _bitmapFont;
+        private BitmapFont _bitmapFont2;
         private IControllerReader _serialReader;
         private readonly BlinkReductionFilter _blinkFilter = new() { ButtonEnabled = true };
         private Dictionary<string, ButtonStateHistory> _buttonInfos = new Dictionary<string, ButtonStateHistory>();
@@ -58,12 +59,15 @@ namespace InputVisualizer
             _graphics.PreferredBackBufferHeight = 620;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            Window.AllowUserResizing = true;
+            InactiveSleepTime = TimeSpan.Zero;
         }
 
         protected override void Initialize()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _bitmapFont = Content.Load<BitmapFont>("my_font");
+            _bitmapFont2 = Content.Load<BitmapFont>("my_font2");
 
             InitGamepads();
             LoadConfig();
@@ -158,7 +162,7 @@ namespace InputVisualizer
             _desktop = new Desktop();
             _desktop.Root = grid;
             _desktop.Root.VerticalAlignment = VerticalAlignment.Bottom;
-            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
+            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Right;
         }
 
         private void ShowConfigureGamePadDialog()
@@ -999,7 +1003,7 @@ namespace InputVisualizer
                 {
                     _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
                 }
-                
+
                 var lineMs = CalcMinAge();
                 _minAge = DateTime.Now.AddMilliseconds(-lineMs);
                 _purgeTimer += gameTime.ElapsedGameTime;
@@ -1265,26 +1269,26 @@ namespace InputVisualizer
                     var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
                     var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (int)(lengthInMs * _pixelsPerMs);
+                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
                     if (lengthInPixels < 1)
                     {
                         lengthInPixels = 1;
                     }
 
-                    var x = baseX + (int)xOffset;
+                    var x = baseX + Math.Floor(xOffset);
                     var width = lengthInPixels;
                     var maxX = baseX + lineLength;
 
-                    if (x + width > maxX)
+                    if (x + width >= maxX)
                     {
                         var overflow = (x + width) - maxX;
                         width -= overflow;
                     }
 
                     var rec = new Rectangle();
-                    rec.X = x;
+                    rec.X = (int)Math.Floor(x);
                     rec.Y = yPos - 2 - yOffset - 1;
-                    rec.Width = width;
+                    rec.Width = (int)Math.Floor(width);
                     rec.Height = yOffset * 2 + 1;
                     _onRects[kvp.Key].Add(rec);
                 }
@@ -1324,26 +1328,26 @@ namespace InputVisualizer
                     var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
                     var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (int)(lengthInMs * _pixelsPerMs);
+                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
                     if (lengthInPixels < 1)
                     {
                         lengthInPixels = 1;
                     }
 
-                    var y = baseY + (int)xOffset;
+                    var y = baseY + Math.Floor(xOffset);
                     var height = lengthInPixels;
                     var maxY = baseY + lineLength;
 
-                    if (y + height > maxY)
+                    if (y + height >= maxY)
                     {
                         var overflow = (y + height) - maxY;
                         height -= overflow;
                     }
 
                     var rec = new Rectangle();
-                    rec.Y = y;
+                    rec.Y = (int)Math.Floor(y);
                     rec.X = xPos - 2 - yOffset - 1;
-                    rec.Height = height;
+                    rec.Height = (int)Math.Floor(height);
                     rec.Width = yOffset * 2 + 1;
                     _onRects[kvp.Key].Add(rec);
                 }
@@ -1355,7 +1359,8 @@ namespace InputVisualizer
         {
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
+            var matrix = Matrix.CreateScale(1.5f, 1.5f, 1.5f);
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, matrix);
             switch (_config.DisplayConfig.Layout)
             {
                 case LayoutStyle.Horizontal:
@@ -1392,7 +1397,7 @@ namespace InputVisualizer
 
             foreach (var kvp in _buttonInfos)
             {
-                _spriteBatch.DrawString(_bitmapFont, kvp.Value.Label, new Vector2(rightMargin, yPos), Color.White);
+                _spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(rightMargin, yPos), Color.White);
                 yPos += yInc;
             }
         }
@@ -1411,7 +1416,7 @@ namespace InputVisualizer
                 var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
                 var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
 
-                _spriteBatch.DrawString(_bitmapFont, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
+                _spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
 
                 //empty button press rectangle
                 rec.X = xPos - 1;
@@ -1510,7 +1515,7 @@ namespace InputVisualizer
                         var elapsed = info.PressedElapsed();
                         if (elapsed.TotalSeconds > _config.DisplayConfig.MinDisplayDuration)
                         {
-                            _spriteBatch.DrawString(_bitmapFont, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 17), info.Color);
+                            _spriteBatch.DrawString(_bitmapFont2, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 17), info.Color);
                         }
                     }
                 }
@@ -1519,7 +1524,7 @@ namespace InputVisualizer
                 {
                     if (_frequencyDict[kvp.Key] >= _config.DisplayConfig.MinDisplayFrequency)
                     {
-                        _spriteBatch.DrawString(_bitmapFont, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 17), info.Color);
+                        _spriteBatch.DrawString(_bitmapFont2, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 17), info.Color);
                     }
                 }
                 yPos += yInc;
