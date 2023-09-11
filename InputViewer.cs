@@ -251,7 +251,9 @@ namespace InputVisualizer
             {
                 Text = "Order",
                 GridRow = 1,
-                GridColumn = 4
+                GridColumn = 4,
+                GridColumnSpan = 2,
+                HorizontalAlignment = HorizontalAlignment.Center,
             };
             grid.Widgets.Add(mapLabelVisible);
             grid.Widgets.Add(mapLabelButton);
@@ -391,7 +393,9 @@ namespace InputVisualizer
             {
                 Text = "Order",
                 GridRow = 2,
-                GridColumn = 3
+                GridColumn = 3,
+                GridColumnSpan = 2,
+                HorizontalAlignment = HorizontalAlignment.Center,
             };
             grid.Widgets.Add(mapLabelVisible);
             grid.Widgets.Add(mapLabelButton);
@@ -422,6 +426,7 @@ namespace InputVisualizer
         private void DrawButtonMappings(List<GamepadButtonMapping> mappings, Grid grid, List<Widget> currentWidgets, int gridStartRow, bool showMapButton = false)
         {
             var currGridRow = gridStartRow;
+            var lastGridRow = gridStartRow + mappings.Count - 1;
 
             foreach (var widget in currentWidgets)
             {
@@ -429,7 +434,7 @@ namespace InputVisualizer
             }
             currentWidgets.Clear();
 
-            foreach (var mapping in mappings)
+            foreach (var mapping in mappings.OrderBy(m => m.Order))
             {
                 var currColumn = 0;
 
@@ -498,21 +503,43 @@ namespace InputVisualizer
                 currentWidgets.Add(colorButton);
                 currColumn++;
 
-                var spinButton = new SpinButton
+                if (currGridRow > gridStartRow)
                 {
-                    GridColumn = currColumn,
-                    GridRow = currGridRow,
-                    Width = 50,
-                    Nullable = false,
-                    Value = mapping.Order,
-                    Integer = true,
-                    Increment = 1
-                };
-                spinButton.ValueChanged += (s, e) =>
+                    var upButton = new TextButton
+                    {
+                        GridColumn = currColumn,
+                        GridRow = currGridRow,
+                        Width = 30,
+                        Text = "↑",
+                        HorizontalAlignment = HorizontalAlignment.Right
+                    };
+
+                    upButton.Click += (s, e) =>
+                    {
+                        mappings = UpdateOrder(mappings, mapping, goUp: true);
+                        DrawButtonMappings(mappings, grid, currentWidgets, gridStartRow, showMapButton);
+                    };
+                    currentWidgets.Add(upButton);
+                }
+                currColumn++;
+
+                if (currGridRow < lastGridRow)
                 {
-                    mapping.Order = (int)spinButton.Value;
-                };
-                currentWidgets.Add(spinButton);
+                    var downButton = new TextButton
+                    {
+                        GridColumn = currColumn,
+                        GridRow = currGridRow,
+                        Width = 30,
+                        Text = "↓",
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+                    downButton.Click += (s, e) =>
+                    {
+                        mappings = UpdateOrder(mappings, mapping, goUp: false);
+                        DrawButtonMappings(mappings, grid, currentWidgets, gridStartRow, showMapButton);
+                    };
+                    currentWidgets.Add(downButton);
+                }
                 currGridRow++;
             }
 
@@ -520,6 +547,38 @@ namespace InputVisualizer
             {
                 grid.AddChild(widget);
             }
+        }
+
+        private List<GamepadButtonMapping> UpdateOrder(List<GamepadButtonMapping> mappings, GamepadButtonMapping targetMapping, bool goUp)
+        {
+            var inOrder = mappings.OrderBy(m => m.Order).ToList();
+            var currIndex = inOrder.IndexOf(targetMapping);
+            var targetIndex = 0;
+            if (goUp)
+            {
+                targetIndex = currIndex - 1;
+                if (targetIndex < 0)
+                {
+                    targetIndex = 0;
+                }
+            }
+            else
+            {
+                targetIndex = currIndex + 1;
+                if (targetIndex > mappings.Count - 1)
+                {
+                    targetIndex = mappings.Count - 1;
+                }
+            }
+
+            inOrder.Remove(targetMapping);
+            inOrder.Insert(targetIndex, targetMapping);
+
+            for (var i = 0; i < inOrder.Count; i++)
+            {
+                inOrder[i].Order = i;
+            }
+            return inOrder;
         }
 
         private void ShowConfigureDisplayDialog()
