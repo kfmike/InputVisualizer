@@ -572,8 +572,7 @@ namespace InputVisualizer
                 Value = _config.DisplayConfig.Speed,
                 Minimum = 1,
                 Maximum = 11,
-
-                Width = 50
+                Width = 150
             };
             grid.Widgets.Add(displaySpeedSpin);
 
@@ -588,10 +587,10 @@ namespace InputVisualizer
             {
                 GridRow = 2,
                 GridColumn = 1,
-                Value = _config.DisplayConfig.TurnOffLineSpeed,
+                Value = _config.DisplayConfig.TurnOffLineSpeed / 50.0f,
                 Minimum = 0,
-                Maximum = 2000,
-                Width = 50
+                Maximum = 100,
+                Width = 150
             };
             grid.Widgets.Add(turnOffLineSpeedSpin);
 
@@ -731,7 +730,7 @@ namespace InputVisualizer
                     _config.DisplayConfig.MinDisplayFrequency = frequencyThresholdValue < 1 ? 1 : frequencyThresholdValue;
                 }
                 _config.DisplayConfig.Speed = displaySpeedSpin.Value;
-                _config.DisplayConfig.TurnOffLineSpeed = turnOffLineSpeedSpin.Value;
+                _config.DisplayConfig.TurnOffLineSpeed = turnOffLineSpeedSpin.Value * 50.0f;
                 UpdateSpeed();
                 _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
