@@ -16,6 +16,7 @@ using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
 using System.IO.Ports;
 using Myra.Graphics2D.UI.ColorPicker;
+using Myra.Graphics2D.Brushes;
 
 namespace InputVisualizer
 {
@@ -159,10 +160,78 @@ namespace InputVisualizer
             };
             grid.Widgets.Add(configureDisplayButton);
 
+            var aboutButton = new TextButton
+            {
+                GridColumn = 3,
+                GridRow = 0,
+                Text = "?",
+                Padding = new Thickness(2),
+                Width = 30
+            };
+            aboutButton.Click += (s, a) =>
+            {
+                ShowAboutDialog();
+            };
+            grid.Widgets.Add(aboutButton);
+
+            var container = new HorizontalStackPanel();
+            {
+                
+            };
+
+            var menuBar = new HorizontalMenu()
+            {
+                Padding = new Thickness(1),
+            };
+
+            var menuItemInputs = new MenuItem();
+            menuItemInputs.Text = "Input";
+            menuItemInputs.Id = "menuItemInputs";
+            menuItemInputs.Selected += (s, a) =>
+            {
+                if (_currentInputMode == InputMode.RetroSpy)
+                {
+                    ShowConfigureRetroSpyDialog();
+                }
+                else
+                {
+                    ShowConfigureGamePadDialog();
+                }
+            };
+            container.Widgets.Add(inputSourceCombo);
+            container.Widgets.Add(menuBar);
+           
+
+            var menuItemDisplay = new MenuItem();
+            menuItemDisplay.Text = "Display";
+            menuItemDisplay.Id = "menuItemDisplay";
+
+            menuItemDisplay.Selected += (s, a) =>
+            {
+                ShowConfigureDisplayDialog();
+            };
+
+            var menuItemSettings = new MenuItem();
+            menuItemSettings.Text = "Configure";
+            menuItemSettings.Id = "menuItemSettings";
+            menuItemSettings.Items.Add(menuItemInputs);
+            menuItemSettings.Items.Add(menuItemDisplay);
+
+            var menuItemAbout = new MenuItem();
+            menuItemAbout.Text = "About";
+            menuItemAbout.Id = "menuItemAbout";
+            menuItemAbout.Selected += (s, a) =>
+            {
+                ShowAboutDialog();
+            };
+
+            menuBar.Items.Add(menuItemSettings);
+            menuBar.Items.Add(menuItemAbout);
+
             _desktop = new Desktop();
-            _desktop.Root = grid;
-            _desktop.Root.VerticalAlignment = VerticalAlignment.Bottom;
-            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Right;
+            _desktop.Root = container;
+            _desktop.Root.VerticalAlignment = VerticalAlignment.Top;
+            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
         }
 
         private void ShowConfigureGamePadDialog()
@@ -173,8 +242,8 @@ namespace InputVisualizer
             var name = gamePadName.Length > 32 ? gamePadName.Substring(0, 32) : gamePadName;
             var dialog = new Dialog
             {
-
-                Title = $"{name} Config"
+                Title = $"{name} Config",
+                TitleTextColor = Color.DarkSeaGreen
             };
 
             var grid = new Grid
@@ -298,7 +367,8 @@ namespace InputVisualizer
 
             var dialog = new Dialog
             {
-                Title = "RetroSpy Config"
+                Title = "RetroSpy Config",
+                TitleTextColor = Color.DarkSeaGreen
             };
 
             var grid = new Grid
@@ -581,11 +651,73 @@ namespace InputVisualizer
             return inOrder;
         }
 
+        private void ShowAboutDialog()
+        {
+            var dialog = new Dialog
+            {
+                Title = "About",
+                TitleTextColor = Color.DarkSeaGreen
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var infoLabel = new Label()
+            {
+                GridRow = 0,
+                GridColumn = 0,
+                Text = "Author:",
+                HorizontalAlignment = HorizontalAlignment.Left,
+
+            };
+            var infoLabel2 = new Label()
+            {
+                GridRow = 0,
+                GridColumn = 1,
+                Text = "KungFusedMike",
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            var infoLabel3 = new Label()
+            {
+                GridRow = 1,
+                GridColumn = 0,
+                Text = "Email:",
+                HorizontalAlignment = HorizontalAlignment.Left,
+
+            };
+            var infoLabel4 = new Label()
+            {
+                GridRow = 1,
+                GridColumn = 1,
+                Text = "kungfusedmike@gmail.com",
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            grid.Widgets.Add(infoLabel);
+            grid.Widgets.Add(infoLabel2);
+            grid.Widgets.Add(infoLabel3);
+            grid.Widgets.Add(infoLabel4);
+
+            dialog.Content = grid;
+            dialog.ShowModal(_desktop);
+        }
+
         private void ShowConfigureDisplayDialog()
         {
             var dialog = new Dialog
             {
-                Title = "Display Config"
+                Title = "Display Config",
+                TitleTextColor = Color.DarkSeaGreen
             };
 
             var grid = new Grid
