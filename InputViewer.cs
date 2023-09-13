@@ -1221,11 +1221,11 @@ namespace InputVisualizer
                 var lineMs = CalcMinAge();
                 _minAge = DateTime.Now.AddMilliseconds(-lineMs);
                 _purgeTimer += gameTime.ElapsedGameTime;
-                if (_purgeTimer.Milliseconds > 200)
+                if (_purgeTimer.Milliseconds > 500)
                 {
                     foreach (var button in _buttonInfos.Values)
                     {
-                        button.RemoveOldStateChanges(lineMs + _config.DisplayConfig.TurnOffLineSpeed + 1000);
+                        button.RemoveOldStateChanges(lineMs + _config.DisplayConfig.TurnOffLineSpeed + 500);
                     }
                     _purgeTimer = TimeSpan.Zero;
                 }
