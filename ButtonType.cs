@@ -18,6 +18,7 @@ namespace InputVisualizer
         R,
         C,
         Z,
-        MODE
+        MODE,
+        D
     }
 }

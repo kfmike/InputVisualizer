@@ -44,9 +44,9 @@ namespace InputVisualizer.Config
                 case GamepadStyle.Arcade:
                     {
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DarkRed, MappedButtonType = ButtonType.A, Order = 4 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.X, Label = "B", Color = Color.Gold, MappedButtonType = ButtonType.X, Order = 5 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.Y, Label = "C", Color = Color.DarkGreen, MappedButtonType = ButtonType.Y, Order = 6 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "D", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.R, Order = 7 });
+                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.Gold, MappedButtonType = ButtonType.X, Order = 5 });
+                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.C, Label = "C", Color = Color.DarkGreen, MappedButtonType = ButtonType.Y, Order = 6 });
+                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.D, Label = "D", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.R, Order = 7 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 8 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 9 });
                         break;

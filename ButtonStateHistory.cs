@@ -11,6 +11,7 @@ namespace InputVisualizer
         public Color Color { get; set; }
         public string Label { get; set; }
         private object _modifyLock = new object();
+        public ButtonType UnmappedButtonType { get; set; }
 
         public void AddStateChange(bool state, DateTime time)
         {
