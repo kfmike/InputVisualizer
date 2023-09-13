@@ -48,14 +48,15 @@ namespace InputVisualizer
         private GamepadButtonMapping _listeningMapping;
         private TextButton _listeningButton;
         private Grid _listeningGrid;
+        private Dictionary<string, Texture2D> _buttonImages = new Dictionary<string, Texture2D>();
 
         private Desktop _desktop;
 
         public InputViewer()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 824;
-            _graphics.PreferredBackBufferHeight = 620;
+            _graphics.PreferredBackBufferWidth = 1024;
+            _graphics.PreferredBackBufferHeight = 768;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
@@ -1191,6 +1192,22 @@ namespace InputVisualizer
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            _buttonImages.Add(ButtonType.UP.ToString(), Content.Load<Texture2D>("up_button"));
+            _buttonImages.Add(ButtonType.DOWN.ToString(), Content.Load<Texture2D>("down_button"));
+            _buttonImages.Add(ButtonType.LEFT.ToString(), Content.Load<Texture2D>("left_button"));
+            _buttonImages.Add(ButtonType.RIGHT.ToString(), Content.Load<Texture2D>("right_button"));
+            _buttonImages.Add(ButtonType.A.ToString(), Content.Load<Texture2D>("a_button"));
+            _buttonImages.Add(ButtonType.B.ToString(), Content.Load<Texture2D>("b_button"));
+            _buttonImages.Add(ButtonType.C.ToString(), Content.Load<Texture2D>("c_button"));
+            _buttonImages.Add(ButtonType.X.ToString(), Content.Load<Texture2D>("x_button"));
+            _buttonImages.Add(ButtonType.Y.ToString(), Content.Load<Texture2D>("y_button"));
+            _buttonImages.Add(ButtonType.Z.ToString(), Content.Load<Texture2D>("z_button"));
+            _buttonImages.Add(ButtonType.SELECT.ToString(), Content.Load<Texture2D>("select_button"));
+            _buttonImages.Add(ButtonType.START.ToString(), Content.Load<Texture2D>("start_button"));
+            _buttonImages.Add(ButtonType.L.ToString(), Content.Load<Texture2D>("left_shoulder_button"));
+            _buttonImages.Add(ButtonType.R.ToString(), Content.Load<Texture2D>("right_shoulder_button"));
+            _buttonImages.Add(ButtonType.MODE.ToString(), Content.Load<Texture2D>("mode_button"));
         }
 
         private float CalcMinAge()
@@ -1513,7 +1530,7 @@ namespace InputVisualizer
         private void BuildVerticalRects()
         {
             var xPos = 18;
-            var xInc = ROW_HEIGHT;
+            var xInc = ROW_HEIGHT + 1;
             var yOffset = 2;
             var lineLength = _config.DisplayConfig.LineLength;
 
@@ -1573,7 +1590,7 @@ namespace InputVisualizer
         {
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
-            var matrix = Matrix.CreateScale(1.5f, 1.5f, 1.5f);
+            var matrix = Matrix.CreateScale(2f, 2f, 2f);
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, matrix);
             switch (_config.DisplayConfig.Layout)
             {
@@ -1605,13 +1622,16 @@ namespace InputVisualizer
 
         private void DrawButtons()
         {
-            var yPos = 35;
+            var yPos = 42;
             var yInc = ROW_HEIGHT;
             var rightMargin = 10;
 
             foreach (var kvp in _buttonInfos)
             {
-                _spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(rightMargin, yPos), Color.White);
+                if ( _buttonImages.ContainsKey(kvp.Key) && _buttonImages[kvp.Key] != null)
+                {
+                    _spriteBatch.Draw(_buttonImages[kvp.Key], new Vector2(rightMargin, yPos), kvp.Value.Color);
+                }
                 yPos += yInc;
             }
         }
@@ -1619,10 +1639,12 @@ namespace InputVisualizer
         private void DrawVerticalButtons()
         {
             var yPos = 35;
-            var xInc = ROW_HEIGHT;
+            var xInc = ROW_HEIGHT + 1;
             var xPos = 10;
             var rec = Rectangle.Empty;
             var lineLength = _config.DisplayConfig.LineLength;
+            var labelXInc = ROW_HEIGHT + 1;
+            var labelX = xPos;
 
             foreach (var kvp in _buttonInfos)
             {
@@ -1630,7 +1652,11 @@ namespace InputVisualizer
                 var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
                 var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
 
-                _spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
+                if (_buttonImages.ContainsKey(kvp.Key) && _buttonImages[kvp.Key] != null)
+                {
+                    _spriteBatch.Draw(_buttonImages[kvp.Key], new Vector2(xPos - 2, yPos), kvp.Value.Color);
+                }
+                //_spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
 
                 //empty button press rectangle
                 rec.X = xPos - 1;
@@ -1670,6 +1696,7 @@ namespace InputVisualizer
                 }
 
                 xPos += xInc;
+                labelX += labelXInc;
             }
         }
 
