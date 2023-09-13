@@ -1157,7 +1157,7 @@ namespace InputVisualizer
                     {
                         foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
                         }
                         break;
                     }
@@ -1165,7 +1165,7 @@ namespace InputVisualizer
                     {
                         foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
                         }
                         break;
                     }
@@ -1173,7 +1173,7 @@ namespace InputVisualizer
                     {
                         foreach (var mapping in _config.RetroSpyConfig.GENESIS.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
                         }
                         break;
                     }
@@ -1185,7 +1185,7 @@ namespace InputVisualizer
             _buttonInfos.Clear();
             foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
-                _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
             }
         }
 
@@ -1200,6 +1200,7 @@ namespace InputVisualizer
             _buttonImages.Add(ButtonType.A.ToString(), Content.Load<Texture2D>("a_button"));
             _buttonImages.Add(ButtonType.B.ToString(), Content.Load<Texture2D>("b_button"));
             _buttonImages.Add(ButtonType.C.ToString(), Content.Load<Texture2D>("c_button"));
+            _buttonImages.Add(ButtonType.D.ToString(), Content.Load<Texture2D>("d_button"));
             _buttonImages.Add(ButtonType.X.ToString(), Content.Load<Texture2D>("x_button"));
             _buttonImages.Add(ButtonType.Y.ToString(), Content.Load<Texture2D>("y_button"));
             _buttonImages.Add(ButtonType.Z.ToString(), Content.Load<Texture2D>("z_button"));
@@ -1628,9 +1629,10 @@ namespace InputVisualizer
 
             foreach (var kvp in _buttonInfos)
             {
-                if ( _buttonImages.ContainsKey(kvp.Key) && _buttonImages[kvp.Key] != null)
+                var bType = kvp.Value.UnmappedButtonType.ToString();
+                if ( _buttonImages.ContainsKey(bType) && _buttonImages[bType] != null)
                 {
-                    _spriteBatch.Draw(_buttonImages[kvp.Key], new Vector2(rightMargin, yPos), kvp.Value.Color);
+                    _spriteBatch.Draw(_buttonImages[bType], new Vector2(rightMargin, yPos), kvp.Value.Color);
                 }
                 yPos += yInc;
             }
