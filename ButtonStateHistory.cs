@@ -10,6 +10,7 @@ namespace InputVisualizer
         public List<ButtonStateValue> StateChangeHistory { get; private set; } = new List<ButtonStateValue>();
         public Color Color { get; set; }
         public string Label { get; set; }
+        private object _modifyLock = new object();
 
         public void AddStateChange(bool state, DateTime time)
         {
@@ -19,26 +20,32 @@ namespace InputVisualizer
                 last.EndTime = time;
                 last.Completed = true;
             }
-            StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
+            lock (_modifyLock)
+            {
+                StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
+            }
         }
 
-        public void RemoveOldStateChanges( double ms )
+        public void RemoveOldStateChanges(double ms)
         {
-            var removeItems = new List<ButtonStateValue>();
-            foreach (var change in StateChangeHistory)
+            lock (_modifyLock)
             {
-                if (change.Completed && change.EndTime < DateTime.Now.AddMilliseconds(-ms))
+                var removeItems = new List<ButtonStateValue>();
+                foreach (var change in StateChangeHistory)
                 {
-                    removeItems.Add(change);
+                    if (change.Completed && change.EndTime < DateTime.Now.AddMilliseconds(-ms))
+                    {
+                        removeItems.Add(change);
+                    }
+                    if (!change.IsPressed && change.StartTime < DateTime.Now.AddMilliseconds(-ms))
+                    {
+                        removeItems.Add(change);
+                    }
                 }
-                if( !change.IsPressed && change.StartTime < DateTime.Now.AddMilliseconds(-ms) )
+                foreach (var item in removeItems)
                 {
-                    removeItems.Add(change);
+                    StateChangeHistory.Remove(item);
                 }
-            }
-            foreach (var item in removeItems)
-            {
-                StateChangeHistory.Remove(item);
             }
         }
 
