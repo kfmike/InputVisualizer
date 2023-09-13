@@ -5,7 +5,6 @@ using MonoGame.Extended.BitmapFonts;
 using InputVisualizer.retrospy;
 using System;
 using System.Collections.Generic;
-using InputVisualizer.retrospy.RetroSpy.Readers;
 using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
@@ -16,7 +15,6 @@ using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
 using System.IO.Ports;
 using Myra.Graphics2D.UI.ColorPicker;
-using Myra.Graphics2D.Brushes;
 
 namespace InputVisualizer
 {
@@ -28,7 +26,7 @@ namespace InputVisualizer
         private float _pixelsPerMs = 0.05f;
         private const int ROW_HEIGHT = 16;
 
-        private BitmapFont _bitmapFont;
+        //private BitmapFont _bitmapFont;
         private BitmapFont _bitmapFont2;
         private IControllerReader _serialReader;
         private readonly BlinkReductionFilter _blinkFilter = new() { ButtonEnabled = true };
@@ -67,7 +65,7 @@ namespace InputVisualizer
         protected override void Initialize()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _bitmapFont = Content.Load<BitmapFont>("my_font");
+            //_bitmapFont = Content.Load<BitmapFont>("my_font");
             _bitmapFont2 = Content.Load<BitmapFont>("my_font2");
 
             InitGamepads();
@@ -619,7 +617,7 @@ namespace InputVisualizer
             }
         }
 
-        private List<GamepadButtonMapping> UpdateOrder(List<GamepadButtonMapping> mappings, GamepadButtonMapping targetMapping, bool goUp)
+        private static List<GamepadButtonMapping> UpdateOrder(List<GamepadButtonMapping> mappings, GamepadButtonMapping targetMapping, bool goUp)
         {
             var inOrder = mappings.OrderBy(m => m.Order).ToList();
             var currIndex = inOrder.IndexOf(targetMapping);
@@ -1054,7 +1052,25 @@ namespace InputVisualizer
                     {
                         _serialReader.Finish();
                     }
-                    _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                    switch( _config.RetroSpyConfig.ControllerType)
+                    {
+                        case RetroSpyControllerType.NES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.SNES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.GENESIS:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
+                                break;
+                            }
+                    }
+                    
                     _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
                 }
             }
@@ -1147,6 +1163,14 @@ namespace InputVisualizer
                 case RetroSpyControllerType.SNES:
                     {
                         foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
+                        }
+                        break;
+                    }
+                case RetroSpyControllerType.GENESIS:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.GENESIS.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
                         {
                             _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label });
                         }

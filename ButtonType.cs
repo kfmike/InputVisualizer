@@ -15,6 +15,9 @@ namespace InputVisualizer
         SELECT,
         START,
         L,
-        R
+        R,
+        C,
+        Z,
+        MODE
     }
 }
