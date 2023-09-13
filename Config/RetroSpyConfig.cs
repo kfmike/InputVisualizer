@@ -51,11 +51,13 @@ namespace InputVisualizer.Config
                 SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.LEFT, Label = "L", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.LEFT, Order = 2 });
                 SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.RIGHT, Label = "R", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.RIGHT, Order = 3 });
                 SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.Gold, MappedButtonType = ButtonType.B, Order = 4 });
-                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.A, Order = 5 });
-                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.L, Label = "L", Color = Color.DarkBlue, MappedButtonType = ButtonType.L, Order = 6 });
-                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "R", Color = Color.DarkBlue, MappedButtonType = ButtonType.R, Order = 7 });
-                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 8 });
-                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 9 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DarkRed, MappedButtonType = ButtonType.A, Order = 5 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.Y, Label = "Y", Color = Color.DarkGreen, MappedButtonType = ButtonType.Y, Order = 6 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.X, Label = "X", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.X, Order = 7 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.L, Label = "L", Color = Color.Silver, MappedButtonType = ButtonType.L, Order = 8 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "R", Color = Color.Silver, MappedButtonType = ButtonType.R, Order = 9 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 10 });
+                SNES.ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 11 });
             }
             if (!GENESIS.ButtonMappings.Any())
             {

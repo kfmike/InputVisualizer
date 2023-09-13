@@ -34,8 +34,8 @@ namespace InputVisualizer.Config
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.DarkRed, MappedButtonType = ButtonType.B, Order = 5 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.X, Label = "X", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.X, Order = 6 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.Y, Label = "Y", Color = Color.Gold, MappedButtonType = ButtonType.Y, Order = 7 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.L, Label = "L", Color = Color.DarkBlue, MappedButtonType = ButtonType.L, Order = 8 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "R", Color = Color.DarkBlue, MappedButtonType = ButtonType.R, Order = 9 });
+                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.L, Label = "L", Color = Color.Silver, MappedButtonType = ButtonType.L, Order = 8 });
+                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "R", Color = Color.Silver, MappedButtonType = ButtonType.R, Order = 9 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 10 });
                         ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 11 });
 
