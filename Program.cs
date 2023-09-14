@@ -1,3 +1,3 @@
 ﻿
-using var game = new InputVisualizer.InputViewer();
+using var game = new InputVisualizer.InputVisualizer();
 game.Run();
