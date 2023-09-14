@@ -110,40 +110,6 @@
 /processorParam:TextureFormat=Color
 /build:mode_button.png;mode_button
 
-#begin my_font_0.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:my_font_0.png
-
-#begin my_font.fnt
-/importer:BitmapFontImporter
-/processor:BitmapFontProcessor
-/build:my_font.fnt
-
-#begin my_font2_0.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:my_font2_0.png
-
-#begin my_font2.fnt
-/importer:BitmapFontImporter
-/processor:BitmapFontProcessor
-/build:my_font2.fnt
-
 #begin right_button.png
 /importer:TextureImporter
 /processor:TextureProcessor

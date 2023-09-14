@@ -15,6 +15,7 @@ using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
 using System.IO.Ports;
 using Myra.Graphics2D.UI.ColorPicker;
+using FontStashSharp;
 
 namespace InputVisualizer
 {
@@ -26,8 +27,6 @@ namespace InputVisualizer
         private float _pixelsPerMs = 0.05f;
         private const int ROW_HEIGHT = 16;
 
-        //private BitmapFont _bitmapFont;
-        private BitmapFont _bitmapFont2;
         private IControllerReader _serialReader;
         private readonly BlinkReductionFilter _blinkFilter = new() { ButtonEnabled = true };
         private Dictionary<string, ButtonStateHistory> _buttonInfos = new Dictionary<string, ButtonStateHistory>();
@@ -49,6 +48,9 @@ namespace InputVisualizer
         private TextButton _listeningButton;
         private Grid _listeningGrid;
         private Dictionary<string, Texture2D> _buttonImages = new Dictionary<string, Texture2D>();
+        private Matrix _matrix = Matrix.CreateScale(2f, 2f, 2f);
+        private FontSystem _fontSystem;
+        private SpriteFontBase _font18;
 
         private Desktop _desktop;
 
@@ -63,12 +65,11 @@ namespace InputVisualizer
             InactiveSleepTime = TimeSpan.Zero;
         }
 
+        #region init
         protected override void Initialize()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            //_bitmapFont = Content.Load<BitmapFont>("my_font");
-            _bitmapFont2 = Content.Load<BitmapFont>("my_font2");
-
+            
             InitGamepads();
             LoadConfig();
             InitInputSource();
@@ -78,6 +79,824 @@ namespace InputVisualizer
             base.Initialize();
         }
 
+        private void SetCurrentInputSource(string id)
+        {
+            _config.CurrentInputSource = id;
+            SaveConfig();
+            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+            InitInputSource();
+        }
+
+        private void InitGamepads()
+        {
+            _systemGamePads.Clear();
+            for (var i = PlayerIndex.One; i <= PlayerIndex.Four; i++)
+            {
+                var state = GamePad.GetState(i);
+                if (state.IsConnected)
+                {
+                    var caps = GamePad.GetCapabilities(i);
+                    _systemGamePads.Add(caps.Identifier, new GamePadInfo
+                    {
+                        Id = caps.Identifier,
+                        Name = caps.DisplayName,
+                        PlayerIndex = i
+                    });
+                }
+            }
+        }
+
+        private void InitViewer()
+        {
+            _pixel = new Texture2D(_graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
+            _pixel.SetData(new Color[] { Color.White });
+            _horizontalAngle = (float)0.0f;
+            CalcMinAge();
+        }
+
+        private void UpdateSpeed()
+        {
+            _pixelsPerMs = 0.05f * _config.DisplayConfig.Speed;
+        }
+
+        private void LoadConfig()
+        {
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
+            if (File.Exists(path))
+            {
+                var configTxt = File.ReadAllText(path);
+                _config = JsonConvert.DeserializeObject<ViewerConfig>(configTxt) ?? new ViewerConfig();
+            }
+            else { _config = new ViewerConfig(); }
+
+            foreach (var kvp in _systemGamePads)
+            {
+                var gamepadConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == kvp.Key);
+                if (gamepadConfig == null)
+                {
+                    gamepadConfig = _config.CreateGamepadConfig(kvp.Key, GamepadStyle.XBOX);
+                }
+                if (!gamepadConfig.ButtonMappings.Any())
+                {
+                    gamepadConfig.GenerateButtonMappings();
+                }
+            }
+
+            UpdateSpeed();
+            _config.RetroSpyConfig.GenerateButtonMappings();
+
+            SaveConfig();
+            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+        }
+
+        private void SaveConfig()
+        {
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
+            File.WriteAllText(path, JsonConvert.SerializeObject(_config, Formatting.Indented));
+        }
+
+        private void InitInputSource()
+        {
+            if (_currentInputMode == InputMode.RetroSpy)
+            {
+                if (!string.IsNullOrEmpty(_config.RetroSpyConfig.ComPortName))
+                {
+                    if (_serialReader != null)
+                    {
+                        _serialReader.Finish();
+                    }
+                    switch (_config.RetroSpyConfig.ControllerType)
+                    {
+                        case RetroSpyControllerType.NES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.SNES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.GENESIS:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
+                                break;
+                            }
+                    }
+
+                    _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                }
+            }
+            else if (_currentInputMode == InputMode.Gamepad)
+            {
+                if (_serialReader != null)
+                {
+                    _serialReader.Finish();
+                    _serialReader = null;
+                }
+                if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
+                {
+                    if (_config.GamepadConfigs.Any())
+                    {
+                        foreach (var gamepadConfig in _config.GamepadConfigs)
+                        {
+                            if (_systemGamePads.Keys.Contains(gamepadConfig.Id))
+                            {
+                                _config.CurrentInputSource = gamepadConfig.Id;
+                                _activeGamepadConfig = gamepadConfig;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (_systemGamePads.Keys.Contains(_config.CurrentInputSource))
+                {
+                    _activeGamepadConfig = _config.GamepadConfigs.First(c => c.Id == _config.CurrentInputSource);
+                }
+                _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
+            }
+            InitButtons();
+        }
+
+        private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
+        {
+            e = _blinkFilter.Process(e);
+
+            foreach (var button in e.Buttons)
+            {
+                if (_buttonInfos.ContainsKey(button.Key))
+                {
+                    if (_buttonInfos[button.Key].IsPressed() != button.Value)
+                    {
+                        _buttonInfos[button.Key].AddStateChange(button.Value, DateTime.Now);
+                    }
+                }
+            }
+        }
+
+        private void InitButtons()
+        {
+            switch (_currentInputMode)
+            {
+                case InputMode.RetroSpy:
+                    {
+                        InitRetroSpyNESButtons();
+                        break;
+                    }
+                case InputMode.Gamepad:
+                    {
+                        InitGamepadButtons();
+                        break;
+                    }
+            }
+
+            _frequencyDict.Clear();
+            _onRects.Clear();
+            foreach (var button in _buttonInfos)
+            {
+                _frequencyDict.Add(button.Key, 0);
+                _onRects.Add(button.Key, new List<Rectangle>());
+            }
+        }
+
+        private void InitRetroSpyNESButtons()
+        {
+            _buttonInfos.Clear();
+
+            switch (_config.RetroSpyConfig.ControllerType)
+            {
+                case RetroSpyControllerType.NES:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
+                        }
+                        break;
+                    }
+                case RetroSpyControllerType.SNES:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
+                        }
+                        break;
+                    }
+                case RetroSpyControllerType.GENESIS:
+                    {
+                        foreach (var mapping in _config.RetroSpyConfig.GENESIS.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+                        {
+                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
+                        }
+                        break;
+                    }
+            }
+        }
+
+        private void InitGamepadButtons()
+        {
+            _buttonInfos.Clear();
+            foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+            {
+                _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
+            }
+        }
+
+        protected override void LoadContent()
+        {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _fontSystem = new FontSystem();
+            _fontSystem.AddFont(File.ReadAllBytes(@"Fonts\DroidSans.ttf"));
+            _font18 = _fontSystem.GetFont(18);
+
+            _buttonImages.Add(ButtonType.UP.ToString(), Content.Load<Texture2D>("up_button"));
+            _buttonImages.Add(ButtonType.DOWN.ToString(), Content.Load<Texture2D>("down_button"));
+            _buttonImages.Add(ButtonType.LEFT.ToString(), Content.Load<Texture2D>("left_button"));
+            _buttonImages.Add(ButtonType.RIGHT.ToString(), Content.Load<Texture2D>("right_button"));
+            _buttonImages.Add(ButtonType.A.ToString(), Content.Load<Texture2D>("a_button"));
+            _buttonImages.Add(ButtonType.B.ToString(), Content.Load<Texture2D>("b_button"));
+            _buttonImages.Add(ButtonType.C.ToString(), Content.Load<Texture2D>("c_button"));
+            _buttonImages.Add(ButtonType.D.ToString(), Content.Load<Texture2D>("d_button"));
+            _buttonImages.Add(ButtonType.X.ToString(), Content.Load<Texture2D>("x_button"));
+            _buttonImages.Add(ButtonType.Y.ToString(), Content.Load<Texture2D>("y_button"));
+            _buttonImages.Add(ButtonType.Z.ToString(), Content.Load<Texture2D>("z_button"));
+            _buttonImages.Add(ButtonType.SELECT.ToString(), Content.Load<Texture2D>("select_button"));
+            _buttonImages.Add(ButtonType.START.ToString(), Content.Load<Texture2D>("start_button"));
+            _buttonImages.Add(ButtonType.L.ToString(), Content.Load<Texture2D>("left_shoulder_button"));
+            _buttonImages.Add(ButtonType.R.ToString(), Content.Load<Texture2D>("right_shoulder_button"));
+            _buttonImages.Add(ButtonType.MODE.ToString(), Content.Load<Texture2D>("mode_button"));
+        }
+        #endregion
+
+        #region update
+        protected override void Update(GameTime gameTime)
+        {
+            if (_listeningForInput)
+            {
+                CheckForListeningInput();
+            }
+            else
+            {
+                if (_currentInputMode == InputMode.Gamepad)
+                {
+                    ReadGamepadInputs();
+                }
+
+                foreach (var button in _buttonInfos)
+                {
+                    _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
+                }
+
+                var lineMs = CalcMinAge();
+                _minAge = DateTime.Now.AddMilliseconds(-lineMs);
+                _purgeTimer += gameTime.ElapsedGameTime;
+                if (_purgeTimer.Milliseconds > 500)
+                {
+                    foreach (var button in _buttonInfos.Values)
+                    {
+                        button.RemoveOldStateChanges(lineMs + _config.DisplayConfig.TurnOffLineSpeed + 500);
+                    }
+                    _purgeTimer = TimeSpan.Zero;
+                }
+
+                switch (_config.DisplayConfig.Layout)
+                {
+                    case LayoutStyle.Horizontal:
+                        {
+                            BuildHorizontalRects();
+                            break;
+                        }
+                    case LayoutStyle.Vertical:
+                        {
+                            BuildVerticalRects();
+                            break;
+                        }
+                }
+            }
+
+            base.Update(gameTime);
+        }
+
+        private float CalcMinAge()
+        {
+            var lineMs = _config.DisplayConfig.LineLength / _pixelsPerMs;
+            _minAge = DateTime.Now.AddMilliseconds(-lineMs);
+            return lineMs;
+        }
+
+        private void BuildHorizontalRects()
+        {
+            var yPos = 52;
+            var yInc = ROW_HEIGHT;
+            var yOffset = 2;
+            var lineLength = _config.DisplayConfig.LineLength;
+
+            var lineStart = DateTime.Now;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                _onRects[kvp.Key].Clear();
+                var info = kvp.Value;
+                var baseX = 41;
+
+                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
+                {
+                    if (!info.StateChangeHistory[i].IsPressed)
+                    {
+                        continue;
+                    }
+
+                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
+
+                    if (endTime < _minAge)
+                    {
+                        break;
+                    }
+
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
+                    var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
+                    var lengthInMs = (endTime - startTime).TotalMilliseconds;
+                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
+                    if (lengthInPixels < 1)
+                    {
+                        lengthInPixels = 1;
+                    }
+
+                    var x = baseX + Math.Floor(xOffset);
+                    var width = lengthInPixels;
+                    var maxX = baseX + lineLength;
+
+                    if (x + width >= maxX)
+                    {
+                        var overflow = (x + width) - maxX;
+                        width -= overflow;
+                    }
+
+                    var rec = new Rectangle();
+                    rec.X = (int)Math.Floor(x);
+                    rec.Y = yPos - 2 - yOffset - 1;
+                    rec.Width = (int)Math.Floor(width);
+                    rec.Height = yOffset * 2 + 1;
+                    _onRects[kvp.Key].Add(rec);
+                }
+                yPos += yInc;
+            }
+        }
+
+        private void BuildVerticalRects()
+        {
+            var xPos = 18;
+            var xInc = ROW_HEIGHT + 1;
+            var yOffset = 2;
+            var lineLength = _config.DisplayConfig.LineLength;
+
+            var lineStart = DateTime.Now;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                _onRects[kvp.Key].Clear();
+                var info = kvp.Value;
+                var baseY = 73;
+
+                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
+                {
+                    if (!info.StateChangeHistory[i].IsPressed)
+                    {
+                        continue;
+                    }
+
+                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
+
+                    if (endTime < _minAge)
+                    {
+                        break;
+                    }
+
+                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
+                    var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
+                    var lengthInMs = (endTime - startTime).TotalMilliseconds;
+                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
+                    if (lengthInPixels < 1)
+                    {
+                        lengthInPixels = 1;
+                    }
+
+                    var y = baseY + Math.Floor(xOffset);
+                    var height = lengthInPixels;
+                    var maxY = baseY + lineLength;
+
+                    if (y + height >= maxY)
+                    {
+                        var overflow = (y + height) - maxY;
+                        height -= overflow;
+                    }
+
+                    var rec = new Rectangle();
+                    rec.Y = (int)Math.Floor(y);
+                    rec.X = xPos - 2 - yOffset - 1;
+                    rec.Height = (int)Math.Floor(height);
+                    rec.Width = yOffset * 2 + 1;
+                    _onRects[kvp.Key].Add(rec);
+                }
+                xPos += xInc;
+            }
+        }
+
+        private void CheckForListeningInput()
+        {
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
+                _listeningForInput = false;
+                _listeningCancelPressed = true;
+                _listeningButton.Text = _listeningMapping.ButtonType.ToString();
+                return;
+            }
+
+            var buttonDetected = ButtonType.NONE;
+            if (GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.UP;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.DOWN;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.LEFT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.RIGHT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.A;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.B;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.X;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.Y;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.L;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.R;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.SELECT;
+            }
+            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed)
+            {
+                buttonDetected = ButtonType.START;
+            }
+
+            if (buttonDetected != ButtonType.NONE)
+            {
+                _listeningMapping.MappedButtonType = buttonDetected;
+                _listeningButton.Text = buttonDetected.ToString();
+
+                foreach (var mapping in _activeGamepadConfig.ButtonMappings)
+                {
+                    if (mapping == _listeningMapping)
+                    {
+                        continue;
+                    }
+                    if (mapping.MappedButtonType == buttonDetected)
+                    {
+                        mapping.MappedButtonType = ButtonType.NONE;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if (textBox != null)
+                        {
+                            textBox.Text = mapping.MappedButtonType.ToString();
+                        }
+                    }
+                }
+                _listeningForInput = false;
+            }
+        }
+
+        private void ReadGamepadInputs()
+        {
+            foreach (var button in _buttonInfos)
+            {
+                switch (button.Key)
+                {
+                    case "UP":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "DOWN":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "LEFT":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "RIGHT":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "SELECT":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "START":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "A":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "B":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "X":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "Y":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "L":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                    case "R":
+                        {
+                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed;
+                            if (button.Value.IsPressed() != pressed)
+                            {
+                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
+                            }
+                            break;
+                        }
+                }
+            }
+        }
+        #endregion
+
+        #region draw
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
+
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, _matrix);
+            
+            switch (_config.DisplayConfig.Layout)
+            {
+                case LayoutStyle.Horizontal:
+                    {
+                        DrawHorizontalLayout();
+                        break;
+                    }
+                case LayoutStyle.Vertical:
+                    {
+                        DrawVerticalLayout();
+                        break;
+                    }
+            }
+            _spriteBatch.End();
+
+            try
+            {
+                _desktop.Render();
+            }
+            catch (Exception)
+            {
+
+            }
+
+            base.Draw(gameTime);
+        }
+
+        private void DrawVerticalLayout()
+        {
+            var yPos = 35;
+            var xInc = ROW_HEIGHT + 1;
+            var xPos = 10;
+            var rec = Rectangle.Empty;
+            var lineLength = _config.DisplayConfig.LineLength;
+            var labelXInc = ROW_HEIGHT + 1;
+            var labelX = xPos;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                var info = kvp.Value;
+                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
+
+                if (_buttonImages.ContainsKey(kvp.Key) && _buttonImages[kvp.Key] != null)
+                {
+                    _spriteBatch.Draw(_buttonImages[kvp.Key], new Vector2(xPos - 2, yPos), kvp.Value.Color);
+                }
+
+                //empty button press rectangle
+                rec.X = xPos - 1;
+                rec.Y = yPos + 25;
+                rec.Width = 13;
+                rec.Height = 13;
+                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                rec.X = xPos;
+                rec.Y = yPos + 26;
+                rec.Width = 11;
+                rec.Height = 11;
+                _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+
+                //draw entire off line
+                if (_config.DisplayConfig.DrawIdleLines)
+                {
+                    rec.X = xPos + 5;
+                    rec.Y = yPos + 38;
+                    rec.Height = lineLength - 1;
+                    rec.Width = 1;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                foreach (var rect in _onRects[kvp.Key])
+                {
+                    _spriteBatch.Draw(_pixel, rect, null, info.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                if (info.IsPressed())
+                {
+                    //fill in button rect
+                    rec.X = xPos - 1;
+                    rec.Y = yPos + 25;
+                    rec.Width = 12;
+                    rec.Height = 12;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                xPos += xInc;
+                labelX += labelXInc;
+            }
+        }
+
+        private void DrawHorizontalButtons()
+        {
+            var yPos = 42;
+            var yInc = ROW_HEIGHT;
+            var rightMargin = 10;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                var bType = kvp.Value.UnmappedButtonType.ToString();
+                if (_buttonImages.ContainsKey(bType) && _buttonImages[bType] != null)
+                {
+                    _spriteBatch.Draw(_buttonImages[bType], new Vector2(rightMargin, yPos), kvp.Value.Color);
+                }
+                yPos += yInc;
+            }
+        }
+
+        private void DrawHorizontalLayout()
+        {
+            DrawHorizontalButtons();
+
+            var yPos = 52;
+            var yInc = ROW_HEIGHT;
+            var baseX = 41;
+            var lineLength = _config.DisplayConfig.LineLength;
+            var infoX = baseX + lineLength + 5;
+
+            foreach (var kvp in _buttonInfos)
+            {
+                var info = kvp.Value;
+                var rec = Rectangle.Empty;
+                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
+
+                //empty button press rectangle
+                rec.X = 28;
+                rec.Y = yPos - 9;
+                rec.Width = 13;
+                rec.Height = 13;
+                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                rec.X = 29;
+                rec.Y = yPos - 8;
+                rec.Width = 11;
+                rec.Height = 11;
+                _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+
+                //draw entire off line
+                if (_config.DisplayConfig.DrawIdleLines)
+                {
+                    rec.X = baseX;
+                    rec.Y = yPos - 3;
+                    rec.Width = lineLength - 1;
+                    rec.Height = 1;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                foreach (var rect in _onRects[kvp.Key])
+                {
+                    _spriteBatch.Draw(_pixel, rect, null, info.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                SpriteFontBase font18 = _fontSystem.GetFont(18);
+                
+                if (info.IsPressed())
+                {
+                    //fill in button rect
+                    rec.X = 28;
+                    rec.Y = yPos - 9;
+                    rec.Width = 12;
+                    rec.Height = 12;
+                    _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+
+                    if (_config.DisplayConfig.DisplayDuration)
+                    {
+                        var elapsed = info.PressedElapsed();
+                        if (elapsed.TotalSeconds > _config.DisplayConfig.MinDisplayDuration)
+                        {
+                            _spriteBatch.DrawString(_font18, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 11), info.Color);
+                        }
+                    }
+                }
+
+                if (_config.DisplayConfig.DisplayFrequency)
+                {
+                    if (_frequencyDict[kvp.Key] >= _config.DisplayConfig.MinDisplayFrequency)
+                    {
+                        _spriteBatch.DrawString(_font18, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 11), info.Color);
+                    }
+                }
+                yPos += yInc;
+            }
+        }
+        #endregion
+
+        #region gui
         private void InitGui()
         {
             MyraEnvironment.Game = this;
@@ -175,7 +994,7 @@ namespace InputVisualizer
 
             var container = new HorizontalStackPanel();
             {
-                
+
             };
 
             var menuBar = new HorizontalMenu()
@@ -199,7 +1018,7 @@ namespace InputVisualizer
             };
             container.Widgets.Add(inputSourceCombo);
             container.Widgets.Add(menuBar);
-           
+
 
             var menuItemDisplay = new MenuItem();
             menuItemDisplay.Text = "Display";
@@ -966,812 +1785,6 @@ namespace InputVisualizer
                 colorButton.TextColor = colorWindow.Color;
             };
         }
-
-        private void SetCurrentInputSource(string id)
-        {
-            _config.CurrentInputSource = id;
-            SaveConfig();
-            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
-            InitInputSource();
-        }
-
-        private void InitGamepads()
-        {
-            _systemGamePads.Clear();
-            for (var i = PlayerIndex.One; i <= PlayerIndex.Four; i++)
-            {
-                var state = GamePad.GetState(i);
-                if (state.IsConnected)
-                {
-                    var caps = GamePad.GetCapabilities(i);
-                    _systemGamePads.Add(caps.Identifier, new GamePadInfo
-                    {
-                        Id = caps.Identifier,
-                        Name = caps.DisplayName,
-                        PlayerIndex = i
-                    });
-                }
-            }
-        }
-
-        private void InitViewer()
-        {
-            _pixel = new Texture2D(_graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
-            _pixel.SetData(new Color[] { Color.White });
-            _horizontalAngle = (float)0.0f;
-            CalcMinAge();
-        }
-
-        private void UpdateSpeed()
-        {
-            _pixelsPerMs = 0.05f * _config.DisplayConfig.Speed;
-        }
-
-        private void LoadConfig()
-        {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
-            if (File.Exists(path))
-            {
-                var configTxt = File.ReadAllText(path);
-                _config = JsonConvert.DeserializeObject<ViewerConfig>(configTxt) ?? new ViewerConfig();
-            }
-            else { _config = new ViewerConfig(); }
-
-            foreach (var kvp in _systemGamePads)
-            {
-                var gamepadConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == kvp.Key);
-                if (gamepadConfig == null)
-                {
-                    gamepadConfig = _config.CreateGamepadConfig(kvp.Key, GamepadStyle.XBOX);
-                }
-                if (!gamepadConfig.ButtonMappings.Any())
-                {
-                    gamepadConfig.GenerateButtonMappings();
-                }
-            }
-
-            UpdateSpeed();
-            _config.RetroSpyConfig.GenerateButtonMappings();
-
-            SaveConfig();
-            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
-        }
-
-        private void SaveConfig()
-        {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"config.json");
-            File.WriteAllText(path, JsonConvert.SerializeObject(_config, Formatting.Indented));
-        }
-
-        private void InitInputSource()
-        {
-            if (_currentInputMode == InputMode.RetroSpy)
-            {
-                if (!string.IsNullOrEmpty(_config.RetroSpyConfig.ComPortName))
-                {
-                    if (_serialReader != null)
-                    {
-                        _serialReader.Finish();
-                    }
-                    switch( _config.RetroSpyConfig.ControllerType)
-                    {
-                        case RetroSpyControllerType.NES:
-                            {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
-                                break;
-                            }
-                        case RetroSpyControllerType.SNES:
-                            {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
-                                break;
-                            }
-                        case RetroSpyControllerType.GENESIS:
-                            {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
-                                break;
-                            }
-                    }
-                    
-                    _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
-                }
-            }
-            else if (_currentInputMode == InputMode.Gamepad)
-            {
-                if (_serialReader != null)
-                {
-                    _serialReader.Finish();
-                    _serialReader = null;
-                }
-                if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
-                {
-                    if (_config.GamepadConfigs.Any())
-                    {
-                        foreach (var gamepadConfig in _config.GamepadConfigs)
-                        {
-                            if (_systemGamePads.Keys.Contains(gamepadConfig.Id))
-                            {
-                                _config.CurrentInputSource = gamepadConfig.Id;
-                                _activeGamepadConfig = gamepadConfig;
-                                break;
-                            }
-                        }
-                    }
-                }
-                else if (_systemGamePads.Keys.Contains(_config.CurrentInputSource))
-                {
-                    _activeGamepadConfig = _config.GamepadConfigs.First(c => c.Id == _config.CurrentInputSource);
-                }
-                _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
-            }
-            InitButtons();
-        }
-
-        private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
-        {
-            e = _blinkFilter.Process(e);
-
-            foreach (var button in e.Buttons)
-            {
-                if (_buttonInfos.ContainsKey(button.Key))
-                {
-                    if (_buttonInfos[button.Key].IsPressed() != button.Value)
-                    {
-                        _buttonInfos[button.Key].AddStateChange(button.Value, DateTime.Now);
-                    }
-                }
-            }
-        }
-
-        private void InitButtons()
-        {
-            switch (_currentInputMode)
-            {
-                case InputMode.RetroSpy:
-                    {
-                        InitRetroSpyNESButtons();
-                        break;
-                    }
-                case InputMode.Gamepad:
-                    {
-                        InitGamepadButtons();
-                        break;
-                    }
-            }
-
-            _frequencyDict.Clear();
-            _onRects.Clear();
-            foreach (var button in _buttonInfos)
-            {
-                _frequencyDict.Add(button.Key, 0);
-                _onRects.Add(button.Key, new List<Rectangle>());
-            }
-        }
-
-        private void InitRetroSpyNESButtons()
-        {
-            _buttonInfos.Clear();
-
-            switch (_config.RetroSpyConfig.ControllerType)
-            {
-                case RetroSpyControllerType.NES:
-                    {
-                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
-                        }
-                        break;
-                    }
-                case RetroSpyControllerType.SNES:
-                    {
-                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
-                        }
-                        break;
-                    }
-                case RetroSpyControllerType.GENESIS:
-                    {
-                        foreach (var mapping in _config.RetroSpyConfig.GENESIS.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _buttonInfos.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
-                        }
-                        break;
-                    }
-            }
-        }
-
-        private void InitGamepadButtons()
-        {
-            _buttonInfos.Clear();
-            foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-            {
-                _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
-            }
-        }
-
-        protected override void LoadContent()
-        {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            _buttonImages.Add(ButtonType.UP.ToString(), Content.Load<Texture2D>("up_button"));
-            _buttonImages.Add(ButtonType.DOWN.ToString(), Content.Load<Texture2D>("down_button"));
-            _buttonImages.Add(ButtonType.LEFT.ToString(), Content.Load<Texture2D>("left_button"));
-            _buttonImages.Add(ButtonType.RIGHT.ToString(), Content.Load<Texture2D>("right_button"));
-            _buttonImages.Add(ButtonType.A.ToString(), Content.Load<Texture2D>("a_button"));
-            _buttonImages.Add(ButtonType.B.ToString(), Content.Load<Texture2D>("b_button"));
-            _buttonImages.Add(ButtonType.C.ToString(), Content.Load<Texture2D>("c_button"));
-            _buttonImages.Add(ButtonType.D.ToString(), Content.Load<Texture2D>("d_button"));
-            _buttonImages.Add(ButtonType.X.ToString(), Content.Load<Texture2D>("x_button"));
-            _buttonImages.Add(ButtonType.Y.ToString(), Content.Load<Texture2D>("y_button"));
-            _buttonImages.Add(ButtonType.Z.ToString(), Content.Load<Texture2D>("z_button"));
-            _buttonImages.Add(ButtonType.SELECT.ToString(), Content.Load<Texture2D>("select_button"));
-            _buttonImages.Add(ButtonType.START.ToString(), Content.Load<Texture2D>("start_button"));
-            _buttonImages.Add(ButtonType.L.ToString(), Content.Load<Texture2D>("left_shoulder_button"));
-            _buttonImages.Add(ButtonType.R.ToString(), Content.Load<Texture2D>("right_shoulder_button"));
-            _buttonImages.Add(ButtonType.MODE.ToString(), Content.Load<Texture2D>("mode_button"));
-        }
-
-        private float CalcMinAge()
-        {
-            var lineMs = _config.DisplayConfig.LineLength / _pixelsPerMs;
-            _minAge = DateTime.Now.AddMilliseconds(-lineMs);
-            return lineMs;
-        }
-
-        protected override void Update(GameTime gameTime)
-        {
-            if (_listeningForInput)
-            {
-                CheckForListeningInput();
-            }
-            else
-            {
-                if (_currentInputMode == InputMode.Gamepad)
-                {
-                    ReadGamepadInputs();
-                }
-
-                foreach (var button in _buttonInfos)
-                {
-                    _frequencyDict[button.Key] = button.Value.GetPressedLastSecond();
-                }
-
-                var lineMs = CalcMinAge();
-                _minAge = DateTime.Now.AddMilliseconds(-lineMs);
-                _purgeTimer += gameTime.ElapsedGameTime;
-                if (_purgeTimer.Milliseconds > 500)
-                {
-                    foreach (var button in _buttonInfos.Values)
-                    {
-                        button.RemoveOldStateChanges(lineMs + _config.DisplayConfig.TurnOffLineSpeed + 500);
-                    }
-                    _purgeTimer = TimeSpan.Zero;
-                }
-
-                switch (_config.DisplayConfig.Layout)
-                {
-                    case LayoutStyle.Horizontal:
-                        {
-                            BuildRects();
-                            break;
-                        }
-                    case LayoutStyle.Vertical:
-                        {
-                            BuildVerticalRects();
-                            break;
-                        }
-                }
-            }
-
-            base.Update(gameTime);
-        }
-
-        private void CheckForListeningInput()
-        {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
-            {
-                _listeningForInput = false;
-                _listeningCancelPressed = true;
-                _listeningButton.Text = _listeningMapping.ButtonType.ToString();
-                return;
-            }
-
-            var buttonDetected = ButtonType.NONE;
-            if (GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.UP;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.DOWN;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.LEFT;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.RIGHT;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.A;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.B;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.X;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.Y;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.L;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.R;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.SELECT;
-            }
-            else if (GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.START;
-            }
-
-            if (buttonDetected != ButtonType.NONE)
-            {
-                _listeningMapping.MappedButtonType = buttonDetected;
-                _listeningButton.Text = buttonDetected.ToString();
-
-                foreach (var mapping in _activeGamepadConfig.ButtonMappings)
-                {
-                    if (mapping == _listeningMapping)
-                    {
-                        continue;
-                    }
-                    if (mapping.MappedButtonType == buttonDetected)
-                    {
-                        mapping.MappedButtonType = ButtonType.NONE;
-                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
-                        if (textBox != null)
-                        {
-                            textBox.Text = mapping.MappedButtonType.ToString();
-                        }
-                    }
-                }
-                _listeningForInput = false;
-            }
-        }
-
-        private void ReadGamepadInputs()
-        {
-            foreach (var button in _buttonInfos)
-            {
-                switch (button.Key)
-                {
-                    case "UP":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Up == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "DOWN":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Down == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "LEFT":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Left == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "RIGHT":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).DPad.Right == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "SELECT":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Back == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "START":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Start == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "A":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.A == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "B":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.B == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "X":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.X == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "Y":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.Y == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "L":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                    case "R":
-                        {
-                            var pressed = GamePad.GetState(_currentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _buttonInfos[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
-                            break;
-                        }
-                }
-            }
-        }
-
-        private void BuildRects()
-        {
-            var yPos = 52;
-            var yInc = ROW_HEIGHT;
-            var yOffset = 2;
-            var lineLength = _config.DisplayConfig.LineLength;
-
-            var lineStart = DateTime.Now;
-
-            foreach (var kvp in _buttonInfos)
-            {
-                _onRects[kvp.Key].Clear();
-                var info = kvp.Value;
-                var baseX = 41;
-
-                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
-                {
-                    if (!info.StateChangeHistory[i].IsPressed)
-                    {
-                        continue;
-                    }
-
-                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
-
-                    if (endTime < _minAge)
-                    {
-                        break;
-                    }
-
-                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
-                    var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
-                    var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
-                    if (lengthInPixels < 1)
-                    {
-                        lengthInPixels = 1;
-                    }
-
-                    var x = baseX + Math.Floor(xOffset);
-                    var width = lengthInPixels;
-                    var maxX = baseX + lineLength;
-
-                    if (x + width >= maxX)
-                    {
-                        var overflow = (x + width) - maxX;
-                        width -= overflow;
-                    }
-
-                    var rec = new Rectangle();
-                    rec.X = (int)Math.Floor(x);
-                    rec.Y = yPos - 2 - yOffset - 1;
-                    rec.Width = (int)Math.Floor(width);
-                    rec.Height = yOffset * 2 + 1;
-                    _onRects[kvp.Key].Add(rec);
-                }
-                yPos += yInc;
-            }
-        }
-
-        private void BuildVerticalRects()
-        {
-            var xPos = 18;
-            var xInc = ROW_HEIGHT + 1;
-            var yOffset = 2;
-            var lineLength = _config.DisplayConfig.LineLength;
-
-            var lineStart = DateTime.Now;
-
-            foreach (var kvp in _buttonInfos)
-            {
-                _onRects[kvp.Key].Clear();
-                var info = kvp.Value;
-                var baseY = 73;
-
-                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
-                {
-                    if (!info.StateChangeHistory[i].IsPressed)
-                    {
-                        continue;
-                    }
-
-                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
-
-                    if (endTime < _minAge)
-                    {
-                        break;
-                    }
-
-                    var xOffset = (lineStart - endTime).TotalMilliseconds * _pixelsPerMs;
-                    var startTime = info.StateChangeHistory[i].StartTime < _minAge ? _minAge : info.StateChangeHistory[i].StartTime;
-                    var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                    var lengthInPixels = (lengthInMs * _pixelsPerMs);
-                    if (lengthInPixels < 1)
-                    {
-                        lengthInPixels = 1;
-                    }
-
-                    var y = baseY + Math.Floor(xOffset);
-                    var height = lengthInPixels;
-                    var maxY = baseY + lineLength;
-
-                    if (y + height >= maxY)
-                    {
-                        var overflow = (y + height) - maxY;
-                        height -= overflow;
-                    }
-
-                    var rec = new Rectangle();
-                    rec.Y = (int)Math.Floor(y);
-                    rec.X = xPos - 2 - yOffset - 1;
-                    rec.Height = (int)Math.Floor(height);
-                    rec.Width = yOffset * 2 + 1;
-                    _onRects[kvp.Key].Add(rec);
-                }
-                xPos += xInc;
-            }
-        }
-
-        protected override void Draw(GameTime gameTime)
-        {
-            GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
-
-            var matrix = Matrix.CreateScale(2f, 2f, 2f);
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, matrix);
-            switch (_config.DisplayConfig.Layout)
-            {
-                case LayoutStyle.Horizontal:
-                    {
-                        DrawButtons();
-                        DrawQueues();
-                        break;
-                    }
-                case LayoutStyle.Vertical:
-                    {
-                        DrawVerticalButtons();
-                        break;
-                    }
-            }
-            _spriteBatch.End();
-
-            try
-            {
-                _desktop.Render();
-            }
-            catch (Exception)
-            {
-
-            }
-
-            base.Draw(gameTime);
-        }
-
-        private void DrawButtons()
-        {
-            var yPos = 42;
-            var yInc = ROW_HEIGHT;
-            var rightMargin = 10;
-
-            foreach (var kvp in _buttonInfos)
-            {
-                var bType = kvp.Value.UnmappedButtonType.ToString();
-                if ( _buttonImages.ContainsKey(bType) && _buttonImages[bType] != null)
-                {
-                    _spriteBatch.Draw(_buttonImages[bType], new Vector2(rightMargin, yPos), kvp.Value.Color);
-                }
-                yPos += yInc;
-            }
-        }
-
-        private void DrawVerticalButtons()
-        {
-            var yPos = 35;
-            var xInc = ROW_HEIGHT + 1;
-            var xPos = 10;
-            var rec = Rectangle.Empty;
-            var lineLength = _config.DisplayConfig.LineLength;
-            var labelXInc = ROW_HEIGHT + 1;
-            var labelX = xPos;
-
-            foreach (var kvp in _buttonInfos)
-            {
-                var info = kvp.Value;
-                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
-                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
-
-                if (_buttonImages.ContainsKey(kvp.Key) && _buttonImages[kvp.Key] != null)
-                {
-                    _spriteBatch.Draw(_buttonImages[kvp.Key], new Vector2(xPos - 2, yPos), kvp.Value.Color);
-                }
-                //_spriteBatch.DrawString(_bitmapFont2, kvp.Value.Label, new Vector2(xPos, yPos), Color.White);
-
-                //empty button press rectangle
-                rec.X = xPos - 1;
-                rec.Y = yPos + 25;
-                rec.Width = 13;
-                rec.Height = 13;
-                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                rec.X = xPos;
-                rec.Y = yPos + 26;
-                rec.Width = 11;
-                rec.Height = 11;
-                _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-
-                //draw entire off line
-                if (_config.DisplayConfig.DrawIdleLines)
-                {
-                    rec.X = xPos + 5;
-                    rec.Y = yPos + 38;
-                    rec.Height = lineLength - 1;
-                    rec.Width = 1;
-                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
-                }
-
-                foreach (var rect in _onRects[kvp.Key])
-                {
-                    _spriteBatch.Draw(_pixel, rect, null, info.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                }
-
-                if (info.IsPressed())
-                {
-                    //fill in button rect
-                    rec.X = xPos - 1;
-                    rec.Y = yPos + 25;
-                    rec.Width = 12;
-                    rec.Height = 12;
-                    _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                }
-
-                xPos += xInc;
-                labelX += labelXInc;
-            }
-        }
-
-        private void DrawQueues()
-        {
-            var yPos = 52;
-            var yInc = ROW_HEIGHT;
-            var baseX = 41;
-            var lineLength = _config.DisplayConfig.LineLength;
-            var infoX = baseX + lineLength + 5;
-
-            foreach (var kvp in _buttonInfos)
-            {
-                var info = kvp.Value;
-                var rec = Rectangle.Empty;
-                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
-                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
-
-                //empty button press rectangle
-                rec.X = 28;
-                rec.Y = yPos - 9;
-                rec.Width = 13;
-                rec.Height = 13;
-                _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                rec.X = 29;
-                rec.Y = yPos - 8;
-                rec.Width = 11;
-                rec.Height = 11;
-                _spriteBatch.Draw(_pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-
-                //draw entire off line
-                if (_config.DisplayConfig.DrawIdleLines)
-                {
-                    rec.X = baseX;
-                    rec.Y = yPos - 3;
-                    rec.Width = lineLength - 1;
-                    rec.Height = 1;
-                    _spriteBatch.Draw(_pixel, rec, null, info.Color * semiTransFactor, _horizontalAngle, new Vector2(0, 0), SpriteEffects.None, 0);
-                }
-
-                foreach (var rect in _onRects[kvp.Key])
-                {
-                    _spriteBatch.Draw(_pixel, rect, null, info.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                }
-
-                if (info.IsPressed())
-                {
-                    //fill in button rect
-                    rec.X = 28;
-                    rec.Y = yPos - 9;
-                    rec.Width = 12;
-                    rec.Height = 12;
-                    _spriteBatch.Draw(_pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-
-                    if (_config.DisplayConfig.DisplayDuration)
-                    {
-                        var elapsed = info.PressedElapsed();
-                        if (elapsed.TotalSeconds > _config.DisplayConfig.MinDisplayDuration)
-                        {
-                            _spriteBatch.DrawString(_bitmapFont2, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 17), info.Color);
-                        }
-                    }
-                }
-
-                if (_config.DisplayConfig.DisplayFrequency)
-                {
-                    if (_frequencyDict[kvp.Key] >= _config.DisplayConfig.MinDisplayFrequency)
-                    {
-                        _spriteBatch.DrawString(_bitmapFont2, $"x{_frequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 17), info.Color);
-                    }
-                }
-                yPos += yInc;
-            }
-        }
+        #endregion
     }
 }
