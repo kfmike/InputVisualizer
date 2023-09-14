@@ -28,7 +28,6 @@ namespace InputVisualizer
         private const int ROW_HEIGHT = 16;
 
         private IControllerReader _serialReader;
-        private readonly BlinkReductionFilter _blinkFilter = new() { ButtonEnabled = true };
         private Dictionary<string, ButtonStateHistory> _buttonInfos = new Dictionary<string, ButtonStateHistory>();
         private Texture2D _pixel;
         private float _horizontalAngle;
@@ -39,7 +38,7 @@ namespace InputVisualizer
         private ViewerConfig _config;
         private Dictionary<string, GamePadInfo> _systemGamePads = new Dictionary<string, GamePadInfo>();
         private GamepadConfig _activeGamepadConfig;
-        private InputMode _currentInputMode = InputMode.Gamepad;
+        private InputMode _currentInputMode = InputMode.RetroSpy;
         private PlayerIndex _currentPlayerIndex;
 
         private bool _listeningForInput = false;
@@ -69,7 +68,7 @@ namespace InputVisualizer
         protected override void Initialize()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            
+
             InitGamepads();
             LoadConfig();
             InitInputSource();
@@ -145,8 +144,13 @@ namespace InputVisualizer
             UpdateSpeed();
             _config.RetroSpyConfig.GenerateButtonMappings();
 
+            if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Any())
+            {
+                _config.CurrentInputSource = "spy";
+            }
+
             SaveConfig();
-            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+            _currentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) || !_systemGamePads.Any() ? InputMode.RetroSpy : InputMode.Gamepad;
         }
 
         private void SaveConfig()
@@ -213,15 +217,16 @@ namespace InputVisualizer
                 {
                     _activeGamepadConfig = _config.GamepadConfigs.First(c => c.Id == _config.CurrentInputSource);
                 }
-                _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
+                if (_activeGamepadConfig != null)
+                {
+                    _currentPlayerIndex = _systemGamePads[_activeGamepadConfig.Id].PlayerIndex;
+                }
             }
             InitButtons();
         }
 
         private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
         {
-            e = _blinkFilter.Process(e);
-
             foreach (var button in e.Buttons)
             {
                 if (_buttonInfos.ContainsKey(button.Key))
@@ -295,6 +300,10 @@ namespace InputVisualizer
         private void InitGamepadButtons()
         {
             _buttonInfos.Clear();
+            if (_activeGamepadConfig == null)
+            {
+                return;
+            }
             foreach (var mapping in _activeGamepadConfig.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
                 _buttonInfos.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, Label = mapping.Label, UnmappedButtonType = mapping.ButtonType });
@@ -711,7 +720,7 @@ namespace InputVisualizer
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
 
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, _matrix);
-            
+
             switch (_config.DisplayConfig.Layout)
             {
                 case LayoutStyle.Horizontal:
@@ -864,7 +873,7 @@ namespace InputVisualizer
                 }
 
                 SpriteFontBase font18 = _fontSystem.GetFont(18);
-                
+
                 if (info.IsPressed())
                 {
                     //fill in button rect
