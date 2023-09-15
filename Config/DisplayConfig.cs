@@ -10,7 +10,7 @@ namespace InputVisualizer.Config
         public int MinDisplayDuration { get; set; } = 2;
         public bool DisplayFrequency { get; set; } = true;
         public int MinDisplayFrequency { get; set; } = 5;
-        public LayoutStyle Layout { get; set; } = LayoutStyle.Horizontal;
+        public DisplayLayoutStyle Layout { get; set; } = DisplayLayoutStyle.Horizontal;
         public bool DrawIdleLines { get; set; } = true;
         public float Speed { get; set; } = 4;
         public int LineLength { get; set; } = 200;

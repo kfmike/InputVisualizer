@@ -20,7 +20,7 @@ namespace InputVisualizer.UI
 
         private bool _listeningForInput = false;
         private bool _listeningCancelPressed = false;
-        private GamepadButtonMapping _listeningMapping;
+        private ButtonMapping _listeningMapping;
         private TextButton _listeningButton;
         private Grid _listeningGrid;
 
@@ -38,7 +38,7 @@ namespace InputVisualizer.UI
             _gameState = gameState;
         }
 
-        public void Init(Dictionary<string, GamePadInfo> systemGamepads)
+        public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads)
         {
 
             var grid = new Grid
@@ -269,7 +269,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningButton.Text = buttonDetected.ToString();
 
-                foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappings)
+                foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
                 {
                     if (mapping == _listeningMapping)
                     {
@@ -289,7 +289,7 @@ namespace InputVisualizer.UI
             }
         }
 
-        private void ShowConfigureGamePadDialog(Dictionary<string, GamePadInfo> systemGamepads)
+        private void ShowConfigureGamePadDialog(Dictionary<string, SystemGamePadInfo> systemGamepads)
         {
             var buttonMapWidgets = new List<Widget>();
 
@@ -343,7 +343,7 @@ namespace InputVisualizer.UI
             {
                 _gameState.ActiveGamepadConfig.Style = (GamepadStyle)styleComboBox.SelectedItem.Tag;
                 _gameState.ActiveGamepadConfig.GenerateButtonMappings();
-                DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+                DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
             };
             grid.Widgets.Add(styleComboBox);
 
@@ -385,14 +385,14 @@ namespace InputVisualizer.UI
             grid.Widgets.Add(mapLabelColor);
             grid.Widgets.Add(mapLabelOrder);
 
-            DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+            DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
 
             dialog.Content = grid;
             dialog.Closing += (s, a) =>
             {
                 if (_listeningForInput)
                 {
-                    var messageBox = Dialog.CreateMessageBox("Hey you!", "Finish mapping button or hit DEL to cancel");
+                    var messageBox = Dialog.CreateMessageBox("Button Mapping", "Finish mapping button or hit ESC to cancel");
                     messageBox.ShowModal(_desktop);
                     a.Cancel = true;
                 }
@@ -552,7 +552,7 @@ namespace InputVisualizer.UI
             dialog.ShowModal(_desktop);
         }
 
-        private void DrawButtonMappings(List<GamepadButtonMapping> mappings, Grid grid, List<Widget> currentWidgets, int gridStartRow, bool showMapButton = false)
+        private void DrawButtonMappings(List<ButtonMapping> mappings, Grid grid, List<Widget> currentWidgets, int gridStartRow, bool showMapButton = false)
         {
             var currGridRow = gridStartRow;
             var lastGridRow = gridStartRow + mappings.Count - 1;
@@ -581,7 +581,7 @@ namespace InputVisualizer.UI
                 currColumn++;
                 var buttonLabel = new Label
                 {
-                    Text = mapping.Label,
+                    Text = mapping.ButtonType.ToString(),
                     GridRow = currGridRow,
                     GridColumn = currColumn
                 };
@@ -602,7 +602,7 @@ namespace InputVisualizer.UI
                     {
                         if (_listeningForInput)
                         {
-                            var messageBox = Dialog.CreateMessageBox("Hey you!", "Finish mapping button or hit ESC to cancel");
+                            var messageBox = Dialog.CreateMessageBox("Button Mapping", "Finish mapping button or hit ESC to cancel");
                             messageBox.ShowModal(_desktop);
                             return;
                         }
@@ -678,7 +678,7 @@ namespace InputVisualizer.UI
             }
         }
 
-        private static List<GamepadButtonMapping> UpdateOrder(List<GamepadButtonMapping> mappings, GamepadButtonMapping targetMapping, bool goUp)
+        private static List<ButtonMapping> UpdateOrder(List<ButtonMapping> mappings, ButtonMapping targetMapping, bool goUp)
         {
             var inOrder = mappings.OrderBy(m => m.Order).ToList();
             var currIndex = inOrder.IndexOf(targetMapping);
@@ -949,7 +949,7 @@ namespace InputVisualizer.UI
                 GridColumn = 1,
             };
 
-            foreach (LayoutStyle value in Enum.GetValues(typeof(LayoutStyle)))
+            foreach (DisplayLayoutStyle value in Enum.GetValues(typeof(DisplayLayoutStyle)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
                 layoutComboBox.Items.Add(item);
@@ -985,7 +985,7 @@ namespace InputVisualizer.UI
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
                 _config.DisplayConfig.DrawIdleLines = displayIdleLindesCheck.IsChecked;
                 _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
-                _config.DisplayConfig.Layout = (LayoutStyle)layoutComboBox.SelectedItem.Tag;
+                _config.DisplayConfig.Layout = (DisplayLayoutStyle)layoutComboBox.SelectedItem.Tag;
 
                 if( DisplaySettingsUpdated != null )
                 {
@@ -995,7 +995,7 @@ namespace InputVisualizer.UI
             dialog.ShowModal(_desktop);
         }
 
-        private void ChooseColor(GamepadButtonMapping mapping, TextButton colorButton)
+        private void ChooseColor(ButtonMapping mapping, TextButton colorButton)
         {
             var colorWindow = new ColorPickerDialog();
             colorWindow.Color = colorButton.TextColor;

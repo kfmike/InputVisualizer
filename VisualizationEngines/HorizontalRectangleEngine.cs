@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace InputVisualizer.Layouts
 {
-    public class HorizontalRectangleLayout : VisualizerLayout
+    public class HorizontalRectangleEngine : VisualizerEngine
     {
         private const int ROW_HEIGHT = 17;
         private Dictionary<string, List<Rectangle>> _onRects = new Dictionary<string, List<Rectangle>>();

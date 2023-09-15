@@ -1,7 +1,7 @@
 ﻿
 namespace InputVisualizer.Config
 {
-    public enum LayoutStyle
+    public enum DisplayLayoutStyle
     {
         Horizontal,
         Vertical
