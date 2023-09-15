@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using System.Collections.Generic;
 
 namespace InputVisualizer.Config
 {
@@ -7,51 +6,50 @@ namespace InputVisualizer.Config
     {
         public string Id { get; set; }
         public GamepadStyle Style { get; set; }
-        public List<GamepadButtonMapping> ButtonMappings { get; set; } = new List<GamepadButtonMapping>();
+        public ButtonMappingSet ButtonMappingSet { get; set; } = new ButtonMappingSet();
 
         public void GenerateButtonMappings()
         {
-            ButtonMappings.Clear();
-            ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.UP, Label = "U", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.UP, Order = 0 });
-            ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.DOWN, Label = "D", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.DOWN, Order = 1 });
-            ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.LEFT, Label = "L", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.LEFT, Order = 2 });
-            ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.RIGHT, Label = "R", Color = Color.DarkSeaGreen, MappedButtonType = ButtonType.RIGHT, Order = 3 });
+            ButtonMappingSet = new ButtonMappingSet();
+            ButtonMappingSet.AddButton(ButtonType.UP, ButtonType.UP, Color.DarkSeaGreen);
+            ButtonMappingSet.AddButton(ButtonType.DOWN, ButtonType.DOWN, Color.DarkSeaGreen);
+            ButtonMappingSet.AddButton(ButtonType.LEFT, ButtonType.LEFT, Color.DarkSeaGreen);
+            ButtonMappingSet.AddButton(ButtonType.RIGHT,ButtonType.RIGHT, Color.DarkSeaGreen);
 
             switch (Style)
             {
                 case GamepadStyle.NES:
                     {
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.A, Order = 4 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.Gold, MappedButtonType = ButtonType.B, Order = 5 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 6 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 7 });
-
+                        ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DeepSkyBlue);
+                        ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.Gold);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
                         break;
                     }
                 case GamepadStyle.XBOX:
                     {
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DarkGreen, MappedButtonType = ButtonType.A, Order = 4 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.DarkRed, MappedButtonType = ButtonType.B, Order = 5 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.X, Label = "X", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.X, Order = 6 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.Y, Label = "Y", Color = Color.Gold, MappedButtonType = ButtonType.Y, Order = 7 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.L, Label = "L", Color = Color.Silver, MappedButtonType = ButtonType.L, Order = 8 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.R, Label = "R", Color = Color.Silver, MappedButtonType = ButtonType.R, Order = 9 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 10 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 11 });
-
+                        ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DarkGreen);
+                        ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.DarkRed);
+                        ButtonMappingSet.AddButton(ButtonType.X, ButtonType.X, Color.DeepSkyBlue);
+                        ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.Gold);
+                        ButtonMappingSet.AddButton(ButtonType.L, ButtonType.L, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.R, ButtonType.R, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
                         break;
                     }
                 case GamepadStyle.Arcade:
                     {
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.A, Label = "A", Color = Color.DarkRed, MappedButtonType = ButtonType.A, Order = 4 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.B, Label = "B", Color = Color.Gold, MappedButtonType = ButtonType.X, Order = 5 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.C, Label = "C", Color = Color.DarkGreen, MappedButtonType = ButtonType.Y, Order = 6 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.D, Label = "D", Color = Color.DeepSkyBlue, MappedButtonType = ButtonType.R, Order = 7 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.SELECT, Label = "E", Color = Color.DimGray, MappedButtonType = ButtonType.SELECT, Order = 8 });
-                        ButtonMappings.Add(new GamepadButtonMapping { ButtonType = ButtonType.START, Label = "S", Color = Color.DimGray, MappedButtonType = ButtonType.START, Order = 9 });
+                        ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DarkRed);
+                        ButtonMappingSet.AddButton(ButtonType.B, ButtonType.X, Color.Gold);
+                        ButtonMappingSet.AddButton(ButtonType.C, ButtonType.Y, Color.DarkGreen);
+                        ButtonMappingSet.AddButton(ButtonType.D, ButtonType.R, Color.DeepSkyBlue);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
                         break;
                     }
             }
+            ButtonMappingSet.InitOrder();
         }
     }
 }

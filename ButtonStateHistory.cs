@@ -9,7 +9,6 @@ namespace InputVisualizer
     {
         public List<ButtonStateValue> StateChangeHistory { get; private set; } = new List<ButtonStateValue>();
         public Color Color { get; set; }
-        public string Label { get; set; }
         private object _modifyLock = new object();
         public ButtonType UnmappedButtonType { get; set; }
 
