@@ -35,6 +35,9 @@
     <None Update="LICENSE.MonoGame.Extended.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="LICENSE.MonoGame.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="LICENSE.Myra.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
