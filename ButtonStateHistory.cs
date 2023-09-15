@@ -15,14 +15,14 @@ namespace InputVisualizer
 
         public void AddStateChange(bool state, DateTime time)
         {
-            if (StateChangeHistory.Any())
-            {
-                var last = StateChangeHistory.Last();
-                last.EndTime = time;
-                last.Completed = true;
-            }
             lock (_modifyLock)
             {
+                if (StateChangeHistory.Any())
+                {
+                    var last = StateChangeHistory.Last();
+                    last.EndTime = time;
+                    last.Completed = true;
+                }
                 StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
             }
         }
@@ -52,45 +52,55 @@ namespace InputVisualizer
 
         public bool IsPressed()
         {
-            if (!StateChangeHistory.Any())
+            lock (_modifyLock)
             {
-                return false;
+                if (!StateChangeHistory.Any())
+                {
+                    return false;
+                }
+                return StateChangeHistory.Last().IsPressed;
             }
-            return StateChangeHistory.Last().IsPressed;
         }
 
         public TimeSpan PressedElapsed()
         {
-            if (!StateChangeHistory.Any())
+            lock (_modifyLock)
             {
-                return TimeSpan.Zero;
+                if (!StateChangeHistory.Any())
+                {
+                    return TimeSpan.Zero;
+                }
+                var sc = StateChangeHistory.Last();
+                if (!sc.IsPressed)
+                {
+                    return TimeSpan.Zero;
+                }
+                return DateTime.Now - sc.StartTime;
             }
-            var sc = StateChangeHistory.Last();
-            if (!sc.IsPressed)
-            {
-                return TimeSpan.Zero;
-            }
-            return DateTime.Now - sc.StartTime;
         }
 
         public int GetPressedLastSecond()
         {
-            var frequency = 0;
-            var oneSecondAgo = DateTime.Now.AddSeconds(-1);
-
-            var numChanges = StateChangeHistory.Count;
-            for (var i = numChanges - 1; i >= 0; i--)
+            lock (_modifyLock)
             {
-                if (StateChangeHistory[i].StartTime < oneSecondAgo)
+                var frequency = 0;
+                var oneSecondAgo = DateTime.Now.AddSeconds(-1);
+
+                var numChanges = StateChangeHistory.Count;
+                for (var i = numChanges - 1; i >= 0; i--)
                 {
-                    break;
+                    var sc = StateChangeHistory[i];
+                    if (sc.StartTime < oneSecondAgo)
+                    {
+                        break;
+                    }
+                    if (sc.IsPressed)
+                    {
+                        frequency++;
+                    }
                 }
-                if (StateChangeHistory[i].IsPressed)
-                {
-                    frequency++;
-                }
+                return frequency;
             }
-            return frequency;
         }
     }
 }
