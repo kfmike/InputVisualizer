@@ -11,9 +11,12 @@ namespace InputVisualizer.Layouts
     public class HorizontalRectangleEngine : VisualizerEngine
     {
         private const int ROW_HEIGHT = 17;
+        private const int RECT_OFFSET = 2;
+        private int RECT_HEIGHT = RECT_OFFSET * 2 + 1;
+
         private Dictionary<string, List<Rectangle>> _onRects = new Dictionary<string, List<Rectangle>>();
 
-        public override void Clear( GameState gameState)
+        public override void Clear(GameState gameState)
         {
             _onRects.Clear();
             foreach (var button in gameState.ButtonStates)
@@ -22,11 +25,10 @@ namespace InputVisualizer.Layouts
             }
         }
 
-        public override void Update(ViewerConfig config, GameState gameState, GameTime gameTime )
+        public override void Update(ViewerConfig config, GameState gameState, GameTime gameTime)
         {
             var yPos = 52;
             var yInc = ROW_HEIGHT;
-            var yOffset = 2;
             var lineLength = config.DisplayConfig.LineLength;
             var lineStart = DateTime.Now;
 
@@ -71,9 +73,9 @@ namespace InputVisualizer.Layouts
 
                     var rec = new Rectangle();
                     rec.X = (int)Math.Floor(x);
-                    rec.Y = yPos - 2 - yOffset - 1;
+                    rec.Y = yPos - 2 - RECT_OFFSET - 1;
                     rec.Width = (int)Math.Floor(width);
-                    rec.Height = yOffset * 2 + 1;
+                    rec.Height = RECT_HEIGHT;
                     _onRects[kvp.Key].Add(rec);
                 }
                 yPos += yInc;
@@ -105,8 +107,9 @@ namespace InputVisualizer.Layouts
             {
                 var info = kvp.Value;
                 var rec = Rectangle.Empty;
-                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
-                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
+                var hasActiveObjects = kvp.Value.StateChangeHistory.Any();
+                var semiTransFactor = hasActiveObjects ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = hasActiveObjects ? 0.75f : 0.25f;
 
                 //empty button press rectangle
                 rec.X = 28;

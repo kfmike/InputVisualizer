@@ -10,6 +10,9 @@ namespace InputVisualizer.Layouts
     public class VerticalRectangleEngine : VisualizerEngine
     {
         private const int ROW_HEIGHT = 17;
+        private const int RECT_OFFSET = 2;
+        private int RECT_WIDTH = RECT_OFFSET * 2 + 1;
+
         private Dictionary<string, List<Rectangle>> _onRects = new Dictionary<string, List<Rectangle>>();
 
         public override void Clear(GameState gameState)
@@ -25,7 +28,6 @@ namespace InputVisualizer.Layouts
         {
             var xPos = 18;
             var xInc = ROW_HEIGHT;
-            var yOffset = 2;
             var lineLength = config.DisplayConfig.LineLength;
             var lineStart = DateTime.Now;
 
@@ -70,9 +72,9 @@ namespace InputVisualizer.Layouts
 
                     var rec = new Rectangle();
                     rec.Y = (int)Math.Floor(y);
-                    rec.X = xPos - 2 - yOffset - 1;
+                    rec.X = xPos - 2 - RECT_OFFSET - 1;
                     rec.Height = (int)Math.Floor(height);
-                    rec.Width = yOffset * 2 + 1;
+                    rec.Width = RECT_WIDTH;
                     _onRects[kvp.Key].Add(rec);
                 }
                 xPos += xInc;
@@ -92,8 +94,9 @@ namespace InputVisualizer.Layouts
             foreach (var kvp in gameState.ButtonStates)
             {
                 var info = kvp.Value;
-                var semiTransFactor = kvp.Value.StateChangeHistory.Any() ? 1.0f : 0.3f;
-                var innerBoxSemiTransFactor = kvp.Value.StateChangeHistory.Any() ? 0.75f : 0.25f;
+                var hasActiveObjects = kvp.Value.StateChangeHistory.Any();
+                var semiTransFactor = hasActiveObjects ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = hasActiveObjects ? 0.75f : 0.25f;
 
                 if (commonTextures.ButtonImages.ContainsKey(kvp.Key) && commonTextures.ButtonImages[kvp.Key] != null)
                 {
