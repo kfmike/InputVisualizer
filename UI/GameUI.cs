@@ -186,8 +186,10 @@ namespace InputVisualizer.UI
             menuBar.Items.Add(menuItemSettings);
             menuBar.Items.Add(menuItemAbout);
 
-            _desktop = new Desktop();
-            _desktop.Root = container;
+            _desktop = new Desktop
+            {
+                Root = container
+            };
             _desktop.Root.VerticalAlignment = VerticalAlignment.Top;
             _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
         }
@@ -315,75 +317,39 @@ namespace InputVisualizer.UI
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var label2 = new Label
-            {
-                Text = "Style:",
-                GridRow = 0,
-                GridColumn = 0,
-                GridColumnSpan = 2,
-            };
-            grid.Widgets.Add(label2);
-            var styleComboBox = new ComboBox()
-            {
-                GridRow = 0,
-                GridColumn = 2,
-                GridColumnSpan = 3,
-            };
+            var styleLabel = CreateLabel("Style:", 0, 0, 1, 1);
+            grid.Widgets.Add(styleLabel);
 
+            var styleCombo = CreateComboBox(0, 1, 1, 2);
             foreach (GamepadStyle value in Enum.GetValues(typeof(GamepadStyle)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
-                styleComboBox.Items.Add(item);
+                styleCombo.Items.Add(item);
                 if (_gameState.ActiveGamepadConfig.Style == value)
                 {
-                    styleComboBox.SelectedItem = item;
+                    styleCombo.SelectedItem = item;
                 }
             }
-            styleComboBox.SelectedIndexChanged += (o, e) =>
+            styleCombo.SelectedIndexChanged += (o, e) =>
             {
-                _gameState.ActiveGamepadConfig.Style = (GamepadStyle)styleComboBox.SelectedItem.Tag;
+                _gameState.ActiveGamepadConfig.Style = (GamepadStyle)styleCombo.SelectedItem.Tag;
                 _gameState.ActiveGamepadConfig.GenerateButtonMappings();
                 DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
             };
-            grid.Widgets.Add(styleComboBox);
+            grid.Widgets.Add(styleCombo);
 
-            var mapLabelVisible = new Label
-            {
-                Text = "Visible",
-                GridRow = 1,
-                GridColumn = 0
-            };
-            var mapLabelButton = new Label
-            {
-                Text = "Button",
-                GridRow = 1,
-                GridColumn = 1
-            };
-            var mapLabelButtonMap = new Label
-            {
-                Text = "Mapped To",
-                GridRow = 1,
-                GridColumn = 2
-            };
-            var mapLabelColor = new Label
-            {
-                Text = "Color",
-                GridRow = 1,
-                GridColumn = 3
-            };
-            var mapLabelOrder = new Label
-            {
-                Text = "Order",
-                GridRow = 1,
-                GridColumn = 4,
-                GridColumnSpan = 2,
-                HorizontalAlignment = HorizontalAlignment.Center,
-            };
-            grid.Widgets.Add(mapLabelVisible);
-            grid.Widgets.Add(mapLabelButton);
-            grid.Widgets.Add(mapLabelButtonMap);
-            grid.Widgets.Add(mapLabelColor);
-            grid.Widgets.Add(mapLabelOrder);
+            var visibleLabel = CreateLabel("Visible", 1, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 1, 1, 1, 1);
+            var mappedToLabel = CreateLabel("Mapped To", 1, 2, 1, 1);
+            var colorLabel = CreateLabel("Color", 1, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 1, 4, 1, 2);
+            orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            grid.Widgets.Add(visibleLabel);
+            grid.Widgets.Add(buttonLabel);
+            grid.Widgets.Add(mappedToLabel);
+            grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
 
@@ -410,10 +376,7 @@ namespace InputVisualizer.UI
                     return;
                 }
 
-                if( GamepadSettingsUpdated != null )
-                {
-                    GamepadSettingsUpdated(this, EventArgs.Empty);
-                }
+                GamepadSettingsUpdated?.Invoke(this, EventArgs.Empty);
             };
             dialog.ShowModal(_desktop);
         }
@@ -442,92 +405,51 @@ namespace InputVisualizer.UI
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var label1 = new Label
-            {
-                Text = "COM Port:",
-                GridColumnSpan = 2
-            };
-            grid.Widgets.Add(label1);
+            var comPortLabel = CreateLabel("COM Port:", 0, 0, 1, 2);
+            grid.Widgets.Add(comPortLabel);
 
-            var comPortComboBox = new ComboBox()
-            {
-                GridRow = 0,
-                GridColumn = 2,
-                GridColumnSpan = 2,
-            };
-
+            var comPortCombo = CreateComboBox(0, 2, 1, 2);
             foreach (var name in SerialPort.GetPortNames())
             {
                 var item = new ListItem(name, Color.White, name);
-                comPortComboBox.Items.Add(item);
+                comPortCombo.Items.Add(item);
                 if (string.Equals(_config.RetroSpyConfig.ComPortName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    comPortComboBox.SelectedItem = item;
+                    comPortCombo.SelectedItem = item;
                 }
             }
-            grid.Widgets.Add(comPortComboBox);
+            grid.Widgets.Add(comPortCombo);
 
-            var label2 = new Label
-            {
-                Text = "Style:",
-                GridRow = 1,
-                GridColumn = 0,
-                GridColumnSpan = 2,
-            };
-            grid.Widgets.Add(label2);
-            var styleComboBox = new ComboBox()
-            {
-                GridRow = 1,
-                GridColumn = 2,
-                GridColumnSpan = 2,
-            };
+            var styleLabel = CreateLabel("Style:", 1, 0, 1, 2);
+            grid.Widgets.Add(styleLabel);
 
+            var styleCombo = CreateComboBox(1, 2, 1, 2);
             foreach (RetroSpyControllerType value in Enum.GetValues(typeof(RetroSpyControllerType)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
-                styleComboBox.Items.Add(item);
+                styleCombo.Items.Add(item);
                 if (_config.RetroSpyConfig.ControllerType == value)
                 {
-                    styleComboBox.SelectedItem = item;
+                    styleCombo.SelectedItem = item;
                 }
             }
-            styleComboBox.SelectedIndexChanged += (o, e) =>
+            styleCombo.SelectedIndexChanged += (o, e) =>
             {
-                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
+                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleCombo.SelectedItem.Tag;
                 DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
             };
-            grid.Widgets.Add(styleComboBox);
+            grid.Widgets.Add(styleCombo);
 
-            var mapLabelVisible = new Label
-            {
-                Text = "Visible",
-                GridRow = 2,
-                GridColumn = 0
-            };
-            var mapLabelButton = new Label
-            {
-                Text = "Button",
-                GridRow = 2,
-                GridColumn = 1
-            };
-            var mapLabelColor = new Label
-            {
-                Text = "Color",
-                GridRow = 2,
-                GridColumn = 2
-            };
-            var mapLabelOrder = new Label
-            {
-                Text = "Order",
-                GridRow = 2,
-                GridColumn = 3,
-                GridColumnSpan = 2,
-                HorizontalAlignment = HorizontalAlignment.Center,
-            };
-            grid.Widgets.Add(mapLabelVisible);
-            grid.Widgets.Add(mapLabelButton);
-            grid.Widgets.Add(mapLabelColor);
-            grid.Widgets.Add(mapLabelOrder);
+            var visibleLabel = CreateLabel("Visible", 2, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
+            var colorLabel = CreateLabel("Color", 2, 2, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 3, 1, 2);
+            orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            grid.Widgets.Add(visibleLabel);
+            grid.Widgets.Add(buttonLabel);
+            grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
 
@@ -538,16 +460,13 @@ namespace InputVisualizer.UI
                 {
                     return;
                 }
-                if (comPortComboBox.SelectedItem != null)
+                if (comPortCombo.SelectedItem != null)
                 {
-                    _config.RetroSpyConfig.ComPortName = (string)comPortComboBox.SelectedItem.Tag;
+                    _config.RetroSpyConfig.ComPortName = (string)comPortCombo.SelectedItem.Tag;
                 }
-                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleComboBox.SelectedItem.Tag;
+                _config.RetroSpyConfig.ControllerType = (RetroSpyControllerType)styleCombo.SelectedItem.Tag;
 
-                if (RetroSpySettingsUpdated != null)
-                {
-                    RetroSpySettingsUpdated(this, EventArgs.Empty);
-                }
+                RetroSpySettingsUpdated?.Invoke(this, EventArgs.Empty);
             };
             dialog.ShowModal(_desktop);
         }
@@ -571,7 +490,8 @@ namespace InputVisualizer.UI
                 {
                     IsChecked = mapping.IsVisible,
                     GridRow = currGridRow,
-                    GridColumn = currColumn
+                    GridColumn = currColumn,
+                    HorizontalAlignment = HorizontalAlignment.Center,
                 };
                 visibleCheck.Click += (s, e) =>
                 {
@@ -579,12 +499,9 @@ namespace InputVisualizer.UI
                 };
                 currentWidgets.Add(visibleCheck);
                 currColumn++;
-                var buttonLabel = new Label
-                {
-                    Text = mapping.ButtonType.ToString(),
-                    GridRow = currGridRow,
-                    GridColumn = currColumn
-                };
+
+                var buttonLabel = CreateLabel(mapping.ButtonType.ToString(), currGridRow, currColumn, 1, 1);
+                buttonLabel.Padding = new Thickness(2);
                 currentWidgets.Add(buttonLabel);
                 currColumn++;
 
@@ -732,40 +649,19 @@ namespace InputVisualizer.UI
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var infoLabel = new Label()
+            var aboutLabels = new List<Label>
             {
-                GridRow = 0,
-                GridColumn = 0,
-                Text = "Author:",
-                HorizontalAlignment = HorizontalAlignment.Left,
+                CreateLabel("Author:", 0, 0, 1, 1),
+                CreateLabel("KungFusedMike", 0, 1, 1, 1),
+                CreateLabel("Email:", 1, 0, 1, 1),
+                CreateLabel("kungfusedmike@gmail.com", 1, 1, 1, 1)
+            };
 
-            };
-            var infoLabel2 = new Label()
+            foreach (var label in aboutLabels)
             {
-                GridRow = 0,
-                GridColumn = 1,
-                Text = "KungFusedMike",
-                HorizontalAlignment = HorizontalAlignment.Left,
-            };
-            var infoLabel3 = new Label()
-            {
-                GridRow = 1,
-                GridColumn = 0,
-                Text = "Email:",
-                HorizontalAlignment = HorizontalAlignment.Left,
-
-            };
-            var infoLabel4 = new Label()
-            {
-                GridRow = 1,
-                GridColumn = 1,
-                Text = "kungfusedmike@gmail.com",
-                HorizontalAlignment = HorizontalAlignment.Left,
-            };
-            grid.Widgets.Add(infoLabel);
-            grid.Widgets.Add(infoLabel2);
-            grid.Widgets.Add(infoLabel3);
-            grid.Widgets.Add(infoLabel4);
+                label.HorizontalAlignment = HorizontalAlignment.Left;
+                grid.Widgets.Add(label);
+            }
 
             dialog.Content = grid;
             dialog.ShowModal(_desktop);
@@ -793,27 +689,15 @@ namespace InputVisualizer.UI
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var label1 = new Label
-            {
-                Text = "Line Length:",
-            };
-            grid.Widgets.Add(label1);
+            var lineLengthLabel = CreateLabel("Line Length:", 0, 0, 1, 1);
+            grid.Widgets.Add(lineLengthLabel);
 
-            var displayWidthText = new TextBox()
-            {
-                GridRow = 0,
-                GridColumn = 1,
-                Text = _config.DisplayConfig.LineLength.ToString(),
-                Width = 50
-            };
+            var displayWidthText = CreateTextBox(_config.DisplayConfig.LineLength.ToString(), 0, 1, 1, 1);
+            displayWidthText.Width = 50;
             grid.Widgets.Add(displayWidthText);
 
-            var labelSpeed = new Label
-            {
-                Text = "Speed:",
-                GridRow = 1
-            };
-            grid.Widgets.Add(labelSpeed);
+            var speedLabel = CreateLabel("Speed:", 1, 0, 1, 1);
+            grid.Widgets.Add(speedLabel);
 
             var displaySpeedSpin = new HorizontalSlider()
             {
@@ -826,12 +710,8 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displaySpeedSpin);
 
-            var labelTurnOffLineSpeed = new Label
-            {
-                Text = "Dim Line Delay:",
-                GridRow = 2
-            };
-            grid.Widgets.Add(labelTurnOffLineSpeed);
+            var dimLineLabel = CreateLabel("Dim Line Delay:", 2, 0, 1, 1);
+            grid.Widgets.Add(dimLineLabel);
 
             var turnOffLineSpeedSpin = new HorizontalSlider()
             {
@@ -844,42 +724,23 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(turnOffLineSpeedSpin);
 
-            var label2 = new Label
-            {
-                Text = "Show Duration Min Seconds:",
-                GridRow = 3
-            };
-            grid.Widgets.Add(label2);
-            var pressThresholdText = new TextBox()
-            {
-                GridRow = 3,
-                GridColumn = 1,
-                Text = _config.DisplayConfig.MinDisplayDuration.ToString(),
-                Width = 50
-            };
+            var minSecondsShowDurationLabel = CreateLabel("Show Duration Min Seconds:", 3, 0, 1, 1);
+            grid.Widgets.Add(minSecondsShowDurationLabel);
+
+            var pressThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayDuration.ToString(), 3, 1, 1, 1);
+            pressThresholdText.Width = 50;
             grid.Widgets.Add(pressThresholdText);
 
-            var label3 = new Label
-            {
-                Text = "Show Frequency Min Value:",
-                GridRow = 4
-            };
-            grid.Widgets.Add(label3);
-            var frequencyThresholdText = new TextBox()
-            {
-                GridRow = 4,
-                GridColumn = 1,
-                Text = _config.DisplayConfig.MinDisplayFrequency.ToString(),
-                Width = 50
-            };
+            var minFrequencyLabel = CreateLabel("Show Frequency Min Value:", 4, 0, 1, 1);
+            grid.Widgets.Add(minFrequencyLabel);
+
+            var frequencyThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayFrequency.ToString(), 4, 1, 1, 1);
+            frequencyThresholdText.Width = 50;
             grid.Widgets.Add(frequencyThresholdText);
 
-            var label4 = new Label
-            {
-                Text = "Display Durations:",
-                GridRow = 5
-            };
-            grid.Widgets.Add(label4);
+            var displayDurationLabel = CreateLabel("Display Durations:", 5, 0, 1, 1);
+            grid.Widgets.Add(displayDurationLabel);
+
             var displayDurationCheck = new CheckBox()
             {
                 GridRow = 5,
@@ -888,12 +749,9 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayDurationCheck);
 
-            var label5 = new Label
-            {
-                Text = "Display Frequency Last Second:",
-                GridRow = 6
-            };
-            grid.Widgets.Add(label5);
+            var displayFrequencyLabel = CreateLabel("Display Frequency Last Second:", 6, 0, 1, 1);
+            grid.Widgets.Add(displayFrequencyLabel);
+
             var displayFrequencyCheck = new CheckBox()
             {
                 GridRow = 6,
@@ -902,12 +760,8 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayFrequencyCheck);
 
-            var label8 = new Label
-            {
-                Text = "Show Idle Lines:",
-                GridRow = 7
-            };
-            grid.Widgets.Add(label8);
+            var showIdleLabel = CreateLabel("Show Idle Lines:", 7, 0, 1, 1);
+            grid.Widgets.Add(showIdleLabel);
 
             var displayIdleLindesCheck = new CheckBox()
             {
@@ -917,12 +771,9 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayIdleLindesCheck);
 
-            var label6 = new Label
-            {
-                Text = "Background:",
-                GridRow = 8
-            };
-            grid.Widgets.Add(label6);
+            var backgroundLabel = CreateLabel("Background:", 8, 0, 1, 1);
+            grid.Widgets.Add(backgroundLabel);
+
             var colorButton = new TextButton
             {
                 GridRow = 8,
@@ -937,28 +788,20 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(colorButton);
 
-            var label7 = new Label
-            {
-                Text = "Layout:",
-                GridRow = 9,
-            };
-            grid.Widgets.Add(label7);
-            var layoutComboBox = new ComboBox()
-            {
-                GridRow = 9,
-                GridColumn = 1,
-            };
+            var layoutLabel = CreateLabel("Layout:", 9, 0, 1, 1);
+            grid.Widgets.Add(layoutLabel);
 
+            var layoutCombo = CreateComboBox(9, 1, 1, 1);
             foreach (DisplayLayoutStyle value in Enum.GetValues(typeof(DisplayLayoutStyle)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
-                layoutComboBox.Items.Add(item);
+                layoutCombo.Items.Add(item);
                 if (_config.DisplayConfig.Layout == value)
                 {
-                    layoutComboBox.SelectedItem = item;
+                    layoutCombo.SelectedItem = item;
                 }
             }
-            grid.Widgets.Add(layoutComboBox);
+            grid.Widgets.Add(layoutCombo);
 
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
@@ -985,12 +828,9 @@ namespace InputVisualizer.UI
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
                 _config.DisplayConfig.DrawIdleLines = displayIdleLindesCheck.IsChecked;
                 _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
-                _config.DisplayConfig.Layout = (DisplayLayoutStyle)layoutComboBox.SelectedItem.Tag;
+                _config.DisplayConfig.Layout = (DisplayLayoutStyle)layoutCombo.SelectedItem.Tag;
 
-                if( DisplaySettingsUpdated != null )
-                {
-                    DisplaySettingsUpdated(this, EventArgs.Empty);
-                }
+                DisplaySettingsUpdated?.Invoke(this, EventArgs.Empty);
             };
             dialog.ShowModal(_desktop);
         }
@@ -1027,6 +867,53 @@ namespace InputVisualizer.UI
                 }
                 colorButton.TextColor = colorWindow.Color;
             };
+        }
+
+        private Label CreateLabel(string text, int gridRow, int gridCol, int rowSpan, int colSpan, Color? textColor = null)
+        {
+            var label = new Label()
+            {
+                Text = text,
+                GridRow = gridRow,
+                GridColumn = gridCol,
+                GridRowSpan = rowSpan,
+                GridColumnSpan = colSpan,
+            };
+            if (textColor != null)
+            {
+                label.TextColor = textColor.Value;
+            }
+            return label;
+        }
+
+        private TextBox CreateTextBox(string text, int gridRow, int gridCol, int rowSpan, int colSpan, Color? textColor = null)
+        {
+            var textBox = new TextBox()
+            {
+                Text = text,
+                GridRow = gridRow,
+                GridColumn = gridCol,
+                GridRowSpan = rowSpan,
+                GridColumnSpan = colSpan,
+            };
+            if (textColor != null)
+            {
+                textBox.TextColor = textColor.Value;
+            }
+            return textBox;
+        }
+
+        private ComboBox CreateComboBox(int gridRow, int gridCol, int rowSpan, int colSpan)
+        {
+            var combo = new ComboBox()
+            {
+                GridRow = gridRow,
+                GridColumn = gridCol,
+                GridRowSpan = rowSpan,
+                GridColumnSpan = colSpan,
+                Padding = new Thickness(2)
+            };
+            return combo;
         }
     }
 }
