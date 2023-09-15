@@ -2,7 +2,8 @@
 
 InputVisualizer allows you to see your controller input graphically over time, which is especially useful in the speedrunning community.
 
-# Features
+**Features**
+
 - PC gamepad support with customizable input mapping
 - NES, SNES, and Sega Genesis controller support when used in conjunction with RetroSpy or NintendoSpy devices
 - Customizable display with background transparency for easy integration into OBS layouts
