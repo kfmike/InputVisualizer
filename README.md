@@ -12,7 +12,7 @@ Useful for speedrunners and streamers alike.
 - Displays length of time a button is currently pressed down for
 - Displays how many unique presses for a button in the last second
 
-![image](https://github.com/kfmike/InputVisualizer/assets/57804306/c7d02d52-4349-464a-bad7-670dd2d2905d)
+![image](https://github.com/kfmike/InputVisualizer/assets/57804306/216ddcea-696c-406d-a0ad-9534fba192fc)
 
 # OBS Settings
 
