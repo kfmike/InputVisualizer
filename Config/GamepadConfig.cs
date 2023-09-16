@@ -34,6 +34,8 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.Gold);
                         ButtonMappingSet.AddButton(ButtonType.L, ButtonType.L, Color.Silver);
                         ButtonMappingSet.AddButton(ButtonType.R, ButtonType.R, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.LT, ButtonType.LT, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.RT, ButtonType.RT, Color.Silver);
                         ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
                         ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;

@@ -97,6 +97,18 @@
 /processorParam:TextureFormat=Color
 /build:left_shoulder_button.png;left_shoulder_button
 
+#begin lt_button.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:lt_button.png;lt_button
+
 #begin mode_button.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -132,6 +144,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:right_shoulder_button.png;right_shoulder_button
+
+#begin rt_button.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:rt_button.png;rt_button
 
 #begin select_button.png
 /importer:TextureImporter

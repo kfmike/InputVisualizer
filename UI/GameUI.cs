@@ -257,6 +257,14 @@ namespace InputVisualizer.UI
             {
                 buttonDetected = ButtonType.R;
             }
+            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Triggers.Left > 0.0f)
+            {
+                buttonDetected = ButtonType.LT;
+            }
+            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Triggers.Right > 0.0f)
+            {
+                buttonDetected = ButtonType.RT;
+            }
             else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Back == ButtonState.Pressed)
             {
                 buttonDetected = ButtonType.SELECT;

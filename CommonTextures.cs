@@ -34,6 +34,8 @@ namespace InputVisualizer
             ButtonImages.Add(ButtonType.START.ToString(), content.Load<Texture2D>("start_button"));
             ButtonImages.Add(ButtonType.L.ToString(), content.Load<Texture2D>("left_shoulder_button"));
             ButtonImages.Add(ButtonType.R.ToString(), content.Load<Texture2D>("right_shoulder_button"));
+            ButtonImages.Add(ButtonType.LT.ToString(), content.Load<Texture2D>("lt_button"));
+            ButtonImages.Add(ButtonType.RT.ToString(), content.Load<Texture2D>("rt_button"));
             ButtonImages.Add(ButtonType.MODE.ToString(), content.Load<Texture2D>("mode_button"));
 
             FontSystem = new FontSystem();
