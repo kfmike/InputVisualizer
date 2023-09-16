@@ -843,6 +843,12 @@ namespace InputVisualizer.UI
             dialog.ShowModal(_desktop);
         }
 
+        public void ShowMessage(string title, string message)
+        {
+            var messageBox = Dialog.CreateMessageBox(title, message);
+            messageBox.ShowModal(_desktop);
+        }
+
         private void ChooseColor(ButtonMapping mapping, TextButton colorButton)
         {
             var colorWindow = new ColorPickerDialog();

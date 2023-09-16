@@ -51,9 +51,9 @@ namespace InputVisualizer
 
             InitGamepads();
             LoadConfig();
+            InitUI();
             SetCurrentLayout();
             InitInputSource();
-            InitUI();
             _gameState.ResetPurgeTimer(_config.DisplayConfig.TurnOffLineSpeed);
             base.Initialize();
         }
@@ -196,26 +196,33 @@ namespace InputVisualizer
                 {
                     _serialReader.Finish();
                 }
-                switch (_config.RetroSpyConfig.ControllerType)
+                try
                 {
-                    case RetroSpyControllerType.NES:
-                        {
-                            _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
-                            break;
-                        }
-                    case RetroSpyControllerType.SNES:
-                        {
-                            _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
-                            break;
-                        }
-                    case RetroSpyControllerType.GENESIS:
-                        {
-                            _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
-                            break;
-                        }
-                }
+                    switch (_config.RetroSpyConfig.ControllerType)
+                    {
+                        case RetroSpyControllerType.NES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.SNES:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
+                                break;
+                            }
+                        case RetroSpyControllerType.GENESIS:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
+                                break;
+                            }
+                    }
 
-                _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                    _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                }
+                catch (Exception ex)
+                {
+                    _ui.ShowMessage("RetroSpy Error", ex.Message);
+                }
             }
         }
 
