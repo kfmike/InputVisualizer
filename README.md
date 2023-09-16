@@ -14,9 +14,17 @@ Useful for speedrunners and streamers alike.
 
 ![image](https://github.com/kfmike/InputVisualizer/assets/57804306/c7d02d52-4349-464a-bad7-670dd2d2905d)
 
+# OBS Settings
+
+Add InputVisualizer as a "Game Input" source.
+
+**Transparent Background**
+- Check "Allow Transparency" in the game input source properties.
+- Set the InputVisualizer background color alpha value to zero (default)
+
 # Disclaimer
-This is no more than a fun personal project for me, and as such I have tailored the features to what I do most often.
-I will do my best to continue to add new features and more extensive controller support, but it might take time.
+This is a fun personal project for me, and as such I have tailored the features to what I do most often.
+I will do my best to listen to feedback and continue to add new features, but it might take time.
 I appreciate your patience and support!
 
 # Credits
