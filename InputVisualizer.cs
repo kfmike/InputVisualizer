@@ -376,6 +376,7 @@ namespace InputVisualizer
         private void ReadGamepadInputs()
         {
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex);
+            var analogDpadState = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
             var timeStamp = DateTime.Now;
             foreach (var button in _gameState.ButtonStates)
             {
@@ -384,22 +385,22 @@ namespace InputVisualizer
                 {
                     case "UP":
                         {
-                            pressed = state.DPad.Up == ButtonState.Pressed;
+                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.UP : state.DPad.Up == ButtonState.Pressed;
                             break;
                         }
                     case "DOWN":
                         {
-                            pressed = state.DPad.Down == ButtonState.Pressed;
+                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.DOWN : state.DPad.Down == ButtonState.Pressed;
                             break;
                         }
                     case "LEFT":
                         {
-                            pressed = state.DPad.Left == ButtonState.Pressed;
+                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.LEFT : state.DPad.Left == ButtonState.Pressed;
                             break;
                         }
                     case "RIGHT":
                         {
-                            pressed = state.DPad.Right == ButtonState.Pressed;
+                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.RIGHT : state.DPad.Right == ButtonState.Pressed;
                             break;
                         }
                     case "SELECT":
