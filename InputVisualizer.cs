@@ -368,118 +368,88 @@ namespace InputVisualizer
 
         private void ReadGamepadInputs()
         {
+            var state = GamePad.GetState(_gameState.CurrentPlayerIndex);
+            var timeStamp = DateTime.Now;
             foreach (var button in _gameState.ButtonStates)
             {
+                bool pressed = false;
                 switch (button.Key)
                 {
                     case "UP":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Up == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.DPad.Up == ButtonState.Pressed;
                             break;
                         }
                     case "DOWN":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Down == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.DPad.Down == ButtonState.Pressed;
                             break;
                         }
                     case "LEFT":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Left == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.DPad.Left == ButtonState.Pressed;
                             break;
                         }
                     case "RIGHT":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Right == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.DPad.Right == ButtonState.Pressed;
                             break;
                         }
                     case "SELECT":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Back == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.Back == ButtonState.Pressed;
                             break;
                         }
                     case "START":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Start == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.Start == ButtonState.Pressed;
                             break;
                         }
                     case "A":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.A == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.A == ButtonState.Pressed;
                             break;
                         }
                     case "B":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.B == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.B == ButtonState.Pressed;
                             break;
                         }
                     case "X":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.X == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.X == ButtonState.Pressed;
                             break;
                         }
                     case "Y":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Y == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.Y == ButtonState.Pressed;
                             break;
                         }
                     case "L":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.LeftShoulder == ButtonState.Pressed;
                             break;
                         }
                     case "R":
                         {
-                            var pressed = GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed;
-                            if (button.Value.IsPressed() != pressed)
-                            {
-                                _gameState.ButtonStates[button.Key].AddStateChange(pressed, DateTime.Now);
-                            }
+                            pressed = state.Buttons.RightShoulder == ButtonState.Pressed;
                             break;
                         }
+                    case "LT":
+                        {
+                            pressed = state.Triggers.Left > 0.0f;
+                            break;
+                        }
+                    case "RT":
+                        {
+                            pressed = state.Triggers.Right > 0.0f;
+                            break;
+                        }
+                }
+
+                if (button.Value.IsPressed() != pressed)
+                {
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
                 }
             }
         }
