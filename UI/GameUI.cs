@@ -208,7 +208,8 @@ namespace InputVisualizer.UI
 
         public void CheckForListeningInput()
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            var keyboardState = Keyboard.GetState();
+            if (keyboardState.IsKeyDown(Keys.Escape))
             {
                 _listeningForInput = false;
                 _listeningCancelPressed = true;
@@ -216,82 +217,94 @@ namespace InputVisualizer.UI
                 return;
             }
 
+            var keyDetected = Keys.None;
             var buttonDetected = ButtonType.NONE;
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
 
-            if (_gameState.ActiveGamepadConfig.UseLStickForDpad)
+            var pressedKeys = keyboardState.GetPressedKeys();
+            if (pressedKeys.Length > 0)
             {
-                var result = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
-                buttonDetected = result.LeftRight != ButtonType.NONE ? result.LeftRight : result.UpDown;
-            }
-            else
-            {
-                if (state.DPad.Up == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.UP;
-                }
-                else if (state.DPad.Down == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.DOWN;
-                }
-                else if (state.DPad.Left == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.LEFT;
-                }
-                else if (state.DPad.Right == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.RIGHT;
-                }
+                keyDetected = pressedKeys[0];
             }
 
-            if (buttonDetected == ButtonType.NONE)
+            if (keyDetected == Keys.None)
             {
-                if (state.Buttons.A == ButtonState.Pressed)
+                if (_gameState.ActiveGamepadConfig.UseLStickForDpad)
                 {
-                    buttonDetected = ButtonType.A;
+                    var result = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
+                    buttonDetected = result.LeftRight != ButtonType.NONE ? result.LeftRight : result.UpDown;
                 }
-                else if (state.Buttons.B == ButtonState.Pressed)
+                else
                 {
-                    buttonDetected = ButtonType.B;
+                    if (state.DPad.Up == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.UP;
+                    }
+                    else if (state.DPad.Down == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.DOWN;
+                    }
+                    else if (state.DPad.Left == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.LEFT;
+                    }
+                    else if (state.DPad.Right == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.RIGHT;
+                    }
                 }
-                else if (state.Buttons.X == ButtonState.Pressed)
+
+                if (buttonDetected == ButtonType.NONE)
                 {
-                    buttonDetected = ButtonType.X;
-                }
-                else if (state.Buttons.Y == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.Y;
-                }
-                else if (state.Buttons.LeftShoulder == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.L;
-                }
-                else if (state.Buttons.RightShoulder == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.R;
-                }
-                else if (state.Triggers.Left > 0.0f)
-                {
-                    buttonDetected = ButtonType.LT;
-                }
-                else if (state.Triggers.Right > 0.0f)
-                {
-                    buttonDetected = ButtonType.RT;
-                }
-                else if (state.Buttons.Back == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.SELECT;
-                }
-                else if (state.Buttons.Start == ButtonState.Pressed)
-                {
-                    buttonDetected = ButtonType.START;
+                    if (state.Buttons.A == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.A;
+                    }
+                    else if (state.Buttons.B == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.B;
+                    }
+                    else if (state.Buttons.X == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.X;
+                    }
+                    else if (state.Buttons.Y == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.Y;
+                    }
+                    else if (state.Buttons.LeftShoulder == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.L;
+                    }
+                    else if (state.Buttons.RightShoulder == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.R;
+                    }
+                    else if (state.Triggers.Left > 0.0f)
+                    {
+                        buttonDetected = ButtonType.LT;
+                    }
+                    else if (state.Triggers.Right > 0.0f)
+                    {
+                        buttonDetected = ButtonType.RT;
+                    }
+                    else if (state.Buttons.Back == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.SELECT;
+                    }
+                    else if (state.Buttons.Start == ButtonState.Pressed)
+                    {
+                        buttonDetected = ButtonType.START;
+                    }
                 }
             }
 
             if (buttonDetected != ButtonType.NONE)
             {
+                _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
-                _listeningButton.Text = buttonDetected.ToString();
+                _listeningMapping.MappedKey = Keys.None;
+                _listeningButton.Text = buttonDetected.ToString() + "Button";
 
                 foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
                 {
@@ -311,7 +324,34 @@ namespace InputVisualizer.UI
                 }
                 _listeningForInput = false;
             }
+            else if( keyDetected != Keys.None )
+            {
+                _listeningMapping.MappingType = ButtonMappingType.Key;
+                _listeningMapping.MappedButtonType = ButtonType.NONE;
+                _listeningMapping.MappedKey = keyDetected;
+                _listeningButton.Text = keyDetected.ToString() + " Key";
+
+                foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
+                {
+                    if (mapping == _listeningMapping)
+                    {
+                        continue;
+                    }
+                    if (mapping.MappedKey == keyDetected)
+                    {
+                        mapping.MappedKey = Keys.None;
+                        mapping.MappingType = ButtonMappingType.Button;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if (textBox != null)
+                        {
+                            textBox.Text = mapping.MappedKey.ToString();
+                        }
+                    }
+                }
+                _listeningForInput = false;
+            }
         }
+
 
         private void ShowConfigureGamePadDialog(Dictionary<string, SystemGamePadInfo> systemGamepads)
         {
@@ -339,10 +379,10 @@ namespace InputVisualizer.UI
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
             grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var styleLabel = CreateLabel("Style:", 0, 0, 1, 1);
+            var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
             grid.Widgets.Add(styleLabel);
 
-            var styleCombo = CreateComboBox(0, 1, 1, 2);
+            var styleCombo = CreateComboBox(0, 3, 1, 2);
             foreach (GamepadStyle value in Enum.GetValues(typeof(GamepadStyle)))
             {
                 var item = new ListItem(value.ToString(), Color.White, value);
@@ -360,15 +400,15 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(styleCombo);
 
-            var lStickAsDpadLabel = CreateLabel("Use Left Stick for Dpad:", 1, 0, 1, 2);
+            var lStickAsDpadLabel = CreateLabel("Use Left Stick for Dpad:", 1, 0, 1, 3);
             grid.Widgets.Add(lStickAsDpadLabel);
-            
+
             var lStockAsDpadCheck = new CheckBox
             {
                 IsChecked = _gameState.ActiveGamepadConfig.UseLStickForDpad,
                 GridRow = 1,
                 GridColumn = 3,
-                HorizontalAlignment = HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
             };
             lStockAsDpadCheck.Click += (s, e) =>
             {
@@ -392,6 +432,9 @@ namespace InputVisualizer.UI
             DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
 
             dialog.Content = grid;
+            dialog.ConfirmKey = Keys.None;
+            dialog.CloseKey = Keys.None;
+            dialog.ButtonCancel.Visible = false;
             dialog.Closing += (s, a) =>
             {
                 if (_listeningForInput)
@@ -492,6 +535,9 @@ namespace InputVisualizer.UI
             DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
 
             dialog.Content = grid;
+            dialog.ConfirmKey = Keys.None;
+            dialog.CloseKey = Keys.None;
+            dialog.ButtonCancel.Visible = false;
             dialog.Closed += (s, a) =>
             {
                 if (!dialog.Result)
@@ -549,7 +595,7 @@ namespace InputVisualizer.UI
                     {
                         GridRow = currGridRow,
                         GridColumn = currColumn,
-                        Text = mapping.MappedButtonType.ToString(),
+                        Text = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key",
                         Padding = new Thickness(2),
                         Tag = mapping
                     };
