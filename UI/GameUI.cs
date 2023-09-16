@@ -217,61 +217,75 @@ namespace InputVisualizer.UI
             }
 
             var buttonDetected = ButtonType.NONE;
-            if (GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Up == ButtonState.Pressed)
+            var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
+
+            if (_gameState.ActiveGamepadConfig.UseLStickForDpad)
             {
-                buttonDetected = ButtonType.UP;
+                var result = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
+                buttonDetected = result.LeftRight != ButtonType.NONE ? result.LeftRight : result.UpDown;
             }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Down == ButtonState.Pressed)
+            else
             {
-                buttonDetected = ButtonType.DOWN;
+                if (state.DPad.Up == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.UP;
+                }
+                else if (state.DPad.Down == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.DOWN;
+                }
+                else if (state.DPad.Left == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.LEFT;
+                }
+                else if (state.DPad.Right == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.RIGHT;
+                }
             }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Left == ButtonState.Pressed)
+
+            if (buttonDetected == ButtonType.NONE)
             {
-                buttonDetected = ButtonType.LEFT;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).DPad.Right == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.RIGHT;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.A == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.A;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.B == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.B;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.X == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.X;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Y == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.Y;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.LeftShoulder == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.L;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.RightShoulder == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.R;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Triggers.Left > 0.0f)
-            {
-                buttonDetected = ButtonType.LT;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Triggers.Right > 0.0f)
-            {
-                buttonDetected = ButtonType.RT;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Back == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.SELECT;
-            }
-            else if (GamePad.GetState(_gameState.CurrentPlayerIndex).Buttons.Start == ButtonState.Pressed)
-            {
-                buttonDetected = ButtonType.START;
+                if (state.Buttons.A == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.A;
+                }
+                else if (state.Buttons.B == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.B;
+                }
+                else if (state.Buttons.X == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.X;
+                }
+                else if (state.Buttons.Y == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.Y;
+                }
+                else if (state.Buttons.LeftShoulder == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.L;
+                }
+                else if (state.Buttons.RightShoulder == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.R;
+                }
+                else if (state.Triggers.Left > 0.0f)
+                {
+                    buttonDetected = ButtonType.LT;
+                }
+                else if (state.Triggers.Right > 0.0f)
+                {
+                    buttonDetected = ButtonType.RT;
+                }
+                else if (state.Buttons.Back == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.SELECT;
+                }
+                else if (state.Buttons.Start == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.START;
+                }
             }
 
             if (buttonDetected != ButtonType.NONE)
@@ -342,15 +356,31 @@ namespace InputVisualizer.UI
             {
                 _gameState.ActiveGamepadConfig.Style = (GamepadStyle)styleCombo.SelectedItem.Tag;
                 _gameState.ActiveGamepadConfig.GenerateButtonMappings();
-                DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+                DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
             };
             grid.Widgets.Add(styleCombo);
 
-            var visibleLabel = CreateLabel("Visible", 1, 0, 1, 1);
-            var buttonLabel = CreateLabel("Button", 1, 1, 1, 1);
-            var mappedToLabel = CreateLabel("Mapped To", 1, 2, 1, 1);
-            var colorLabel = CreateLabel("Color", 1, 3, 1, 1);
-            var orderLabel = CreateLabel("Order", 1, 4, 1, 2);
+            var lStickAsDpadLabel = CreateLabel("Use Left Stick for Dpad:", 1, 0, 1, 2);
+            grid.Widgets.Add(lStickAsDpadLabel);
+            
+            var lStockAsDpadCheck = new CheckBox
+            {
+                IsChecked = _gameState.ActiveGamepadConfig.UseLStickForDpad,
+                GridRow = 1,
+                GridColumn = 3,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            lStockAsDpadCheck.Click += (s, e) =>
+            {
+                _gameState.ActiveGamepadConfig.UseLStickForDpad = lStockAsDpadCheck.IsChecked;
+            };
+            grid.Widgets.Add(lStockAsDpadCheck);
+
+            var visibleLabel = CreateLabel("Visible", 2, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
+            var mappedToLabel = CreateLabel("Mapped To", 2, 2, 1, 1);
+            var colorLabel = CreateLabel("Color", 2, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 4, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             grid.Widgets.Add(visibleLabel);
@@ -359,7 +389,7 @@ namespace InputVisualizer.UI
             grid.Widgets.Add(colorLabel);
             grid.Widgets.Add(orderLabel);
 
-            DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 2, showMapButton: true);
+            DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
 
             dialog.Content = grid;
             dialog.Closing += (s, a) =>

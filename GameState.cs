@@ -20,6 +20,7 @@ namespace InputVisualizer
         public float LineMilliseconds { get; set; } = 0f;
         private Timer _purgeTimer = null;
         private float _currentPurgeDelay = 0f;
+        public float AnalogStickDeadZoneTolerance = 0.2f;
 
         public GameState()
         {
