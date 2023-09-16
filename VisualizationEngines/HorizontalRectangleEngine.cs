@@ -84,53 +84,40 @@ namespace InputVisualizer.Layouts
 
         public override void Draw(SpriteBatch spriteBatch, ViewerConfig config, GameState gameState, GameTime gameTime, CommonTextures commonTextures)
         {
-            var yPos = 42;
+            var baseX = 41;
+            var yPos = 52;
             var yInc = ROW_HEIGHT;
             var rightMargin = 10;
-
-            foreach (var kvp in gameState.ButtonStates)
-            {
-                var bType = kvp.Value.UnmappedButtonType.ToString();
-                if (commonTextures.ButtonImages.ContainsKey(bType) && commonTextures.ButtonImages[bType] != null)
-                {
-                    spriteBatch.Draw(commonTextures.ButtonImages[bType], new Vector2(rightMargin, yPos), kvp.Value.Color);
-                }
-                yPos += yInc;
-            }
-
-            yPos = 52;
-            var baseX = 41;
+           
             var lineLength = config.DisplayConfig.LineLength;
             var infoX = baseX + lineLength + 5;
+
+            var squareOuterRect = new Rectangle(28, 0, 13, 13);
+            var squareInnerRect = new Rectangle(29, 0, 11, 11);
+            var offLineRect = new Rectangle(baseX, 0, config.DisplayConfig.LineLength - 1, 1);
 
             foreach (var kvp in gameState.ButtonStates)
             {
                 var info = kvp.Value;
-                var rec = Rectangle.Empty;
                 var hasActiveObjects = kvp.Value.StateChangeHistory.Any();
                 var semiTransFactor = hasActiveObjects ? 1.0f : 0.3f;
                 var innerBoxSemiTransFactor = hasActiveObjects ? 0.75f : 0.25f;
 
-                //empty button press rectangle
-                rec.X = 28;
-                rec.Y = yPos - 9;
-                rec.Width = 13;
-                rec.Height = 13;
-                spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                rec.X = 29;
-                rec.Y = yPos - 8;
-                rec.Width = 11;
-                rec.Height = 11;
-                spriteBatch.Draw(commonTextures.Pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                var bType = kvp.Value.UnmappedButtonType.ToString();
+                if (commonTextures.ButtonImages.ContainsKey(bType) && commonTextures.ButtonImages[bType] != null)
+                {
+                    spriteBatch.Draw(commonTextures.ButtonImages[bType], new Vector2(rightMargin, yPos - 10), kvp.Value.Color);
+                }
 
-                //draw entire off line
+                squareOuterRect.Y = yPos - 9;
+                squareInnerRect.Y = yPos - 8;
+                spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                spriteBatch.Draw(commonTextures.Pixel, squareInnerRect, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+
                 if (config.DisplayConfig.DrawIdleLines)
                 {
-                    rec.X = baseX;
-                    rec.Y = yPos - 3;
-                    rec.Width = lineLength - 1;
-                    rec.Height = 1;
-                    spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * semiTransFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
+                    offLineRect.Y = yPos - 3;
+                    spriteBatch.Draw(commonTextures.Pixel, offLineRect, null, info.Color * semiTransFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
                 }
 
                 foreach (var rect in _onRects[kvp.Key])
@@ -140,12 +127,7 @@ namespace InputVisualizer.Layouts
 
                 if (info.IsPressed())
                 {
-                    //fill in button rect
-                    rec.X = 28;
-                    rec.Y = yPos - 9;
-                    rec.Width = 12;
-                    rec.Height = 12;
-                    spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                    spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
                     if (config.DisplayConfig.DisplayDuration)
                     {

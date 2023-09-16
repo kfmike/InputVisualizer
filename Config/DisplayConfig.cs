@@ -5,7 +5,7 @@ namespace InputVisualizer.Config
 {
     public class DisplayConfig
     {
-        public Color BackgroundColor { get; set; } = new Color(32, 32, 32);
+        public Color BackgroundColor { get; set; } = new Color(32, 32, 32, 0);
         public bool DisplayDuration { get; set; } = true;
         public int MinDisplayDuration { get; set; } = 2;
         public bool DisplayFrequency { get; set; } = true;
