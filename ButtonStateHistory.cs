@@ -1,4 +1,6 @@
-﻿using System;
+﻿using InputVisualizer.Config;
+using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Color = Microsoft.Xna.Framework.Color;
@@ -10,8 +12,10 @@ namespace InputVisualizer
         public List<ButtonStateValue> StateChangeHistory { get; private set; } = new List<ButtonStateValue>();
         public Color Color { get; set; }
         private object _modifyLock = new object();
+        public ButtonMappingType MappingType { get; set; }
         public ButtonType UnmappedButtonType { get; set; }
-
+        public Keys MappedKey { get; set; }
+        
         public void AddStateChange(bool state, DateTime time)
         {
             lock (_modifyLock)

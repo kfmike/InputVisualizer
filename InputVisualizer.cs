@@ -339,7 +339,27 @@ namespace InputVisualizer
             }
             foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
-                _gameState.ButtonStates.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
+                var dictKey = string.Empty;
+
+                if (mapping.MappingType == ButtonMappingType.Button && mapping.MappedButtonType != ButtonType.NONE)
+                {
+                    dictKey = mapping.MappedButtonType.ToString();
+                }
+                else if (mapping.MappingType == ButtonMappingType.Key && mapping.MappedKey != Keys.None)
+                {
+                    dictKey = mapping.MappedKey.ToString();
+                }
+                if (string.IsNullOrEmpty(dictKey))
+                {
+                    continue;
+                }
+                _gameState.ButtonStates.Add(dictKey, new ButtonStateHistory()
+                {
+                    Color = mapping.Color,
+                    UnmappedButtonType = mapping.ButtonType,
+                    MappingType = mapping.MappingType,
+                    MappedKey = mapping.MappedKey
+                });
             }
         }
 
@@ -375,32 +395,46 @@ namespace InputVisualizer
 
         private void ReadGamepadInputs()
         {
+            var keyboardState = Keyboard.GetState();
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex);
             var analogDpadState = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
             var timeStamp = DateTime.Now;
+            var gamepad = _gameState.ActiveGamepadConfig;
+
             foreach (var button in _gameState.ButtonStates)
             {
                 bool pressed = false;
+
+                if (button.Value.MappingType == ButtonMappingType.Key)
+                {
+                    pressed = keyboardState.IsKeyDown(button.Value.MappedKey);
+                    if (button.Value.IsPressed() != pressed)
+                    {
+                        _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                    }
+                    continue;
+                }
+
                 switch (button.Key)
                 {
                     case "UP":
                         {
-                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.UP : state.DPad.Up == ButtonState.Pressed;
+                            pressed = gamepad.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.UP : state.DPad.Up == ButtonState.Pressed;
                             break;
                         }
                     case "DOWN":
                         {
-                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.DOWN : state.DPad.Down == ButtonState.Pressed;
+                            pressed = gamepad.UseLStickForDpad ? analogDpadState.UpDown == ButtonType.DOWN : state.DPad.Down == ButtonState.Pressed;
                             break;
                         }
                     case "LEFT":
                         {
-                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.LEFT : state.DPad.Left == ButtonState.Pressed;
+                            pressed = gamepad.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.LEFT : state.DPad.Left == ButtonState.Pressed;
                             break;
                         }
                     case "RIGHT":
                         {
-                            pressed = _gameState.ActiveGamepadConfig.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.RIGHT : state.DPad.Right == ButtonState.Pressed;
+                            pressed = gamepad.UseLStickForDpad ? analogDpadState.LeftRight == ButtonType.RIGHT : state.DPad.Right == ButtonState.Pressed;
                             break;
                         }
                     case "SELECT":
