@@ -11,10 +11,10 @@ namespace InputVisualizer.Config
         public void GenerateButtonMappings()
         {
             ButtonMappingSet = new ButtonMappingSet();
-            ButtonMappingSet.AddButton(ButtonType.UP, ButtonType.UP, Color.DarkSeaGreen);
-            ButtonMappingSet.AddButton(ButtonType.DOWN, ButtonType.DOWN, Color.DarkSeaGreen);
-            ButtonMappingSet.AddButton(ButtonType.LEFT, ButtonType.LEFT, Color.DarkSeaGreen);
-            ButtonMappingSet.AddButton(ButtonType.RIGHT,ButtonType.RIGHT, Color.DarkSeaGreen);
+            ButtonMappingSet.AddButton(ButtonType.UP, ButtonType.UP, Color.WhiteSmoke);
+            ButtonMappingSet.AddButton(ButtonType.DOWN, ButtonType.DOWN, Color.WhiteSmoke);
+            ButtonMappingSet.AddButton(ButtonType.LEFT, ButtonType.LEFT, Color.WhiteSmoke);
+            ButtonMappingSet.AddButton(ButtonType.RIGHT,ButtonType.RIGHT, Color.WhiteSmoke);
 
             switch (Style)
             {
@@ -22,8 +22,8 @@ namespace InputVisualizer.Config
                     {
                         ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DeepSkyBlue);
                         ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.Gold);
-                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
-                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
                 case GamepadStyle.XBOX:
@@ -34,8 +34,8 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.Gold);
                         ButtonMappingSet.AddButton(ButtonType.L, ButtonType.L, Color.Silver);
                         ButtonMappingSet.AddButton(ButtonType.R, ButtonType.R, Color.Silver);
-                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
-                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
                 case GamepadStyle.Arcade:
@@ -44,8 +44,8 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.B, ButtonType.X, Color.Gold);
                         ButtonMappingSet.AddButton(ButtonType.C, ButtonType.Y, Color.DarkGreen);
                         ButtonMappingSet.AddButton(ButtonType.D, ButtonType.R, Color.DeepSkyBlue);
-                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.DimGray);
-                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.DimGray);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
             }

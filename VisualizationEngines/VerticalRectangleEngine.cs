@@ -83,13 +83,13 @@ namespace InputVisualizer.Layouts
 
         public override void Draw(SpriteBatch spriteBatch, ViewerConfig config, GameState gameState, GameTime gameTime, CommonTextures commonTextures)
         {
-            var yPos = 35;
+            var baseY = 35;
             var xInc = ROW_HEIGHT;
             var xPos = 10;
-            var rec = Rectangle.Empty;
-            var lineLength = config.DisplayConfig.LineLength;
-            var labelXInc = ROW_HEIGHT;
-            var labelX = xPos;
+
+            var squareOuterRect = new Rectangle(0, baseY + 25, 13, 13);
+            var squareInnerRect = new Rectangle(0, baseY + 26, 11, 11);
+            var offLineRect = new Rectangle(0, baseY + 38, 1, config.DisplayConfig.LineLength - 1);
 
             foreach (var kvp in gameState.ButtonStates)
             {
@@ -100,29 +100,18 @@ namespace InputVisualizer.Layouts
 
                 if (commonTextures.ButtonImages.ContainsKey(kvp.Key) && commonTextures.ButtonImages[kvp.Key] != null)
                 {
-                    spriteBatch.Draw(commonTextures.ButtonImages[kvp.Key], new Vector2(xPos - 2, yPos), kvp.Value.Color);
+                    spriteBatch.Draw(commonTextures.ButtonImages[kvp.Key], new Vector2(xPos - 2, baseY), kvp.Value.Color);
                 }
 
-                //empty button press rectangle
-                rec.X = xPos - 1;
-                rec.Y = yPos + 25;
-                rec.Width = 13;
-                rec.Height = 13;
-                spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                rec.X = xPos;
-                rec.Y = yPos + 26;
-                rec.Width = 11;
-                rec.Height = 11;
-                spriteBatch.Draw(commonTextures.Pixel, rec, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                squareOuterRect.X = xPos - 1;
+                squareInnerRect.X = xPos;
+                spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                spriteBatch.Draw(commonTextures.Pixel, squareInnerRect, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
-                //draw entire off line
                 if (config.DisplayConfig.DrawIdleLines)
                 {
-                    rec.X = xPos + 5;
-                    rec.Y = yPos + 38;
-                    rec.Height = lineLength - 1;
-                    rec.Width = 1;
-                    spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * semiTransFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
+                    offLineRect.X = xPos + 5;
+                    spriteBatch.Draw(commonTextures.Pixel, offLineRect, null, info.Color * semiTransFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
                 }
 
                 foreach (var rect in _onRects[kvp.Key])
@@ -132,16 +121,10 @@ namespace InputVisualizer.Layouts
 
                 if (info.IsPressed())
                 {
-                    //fill in button rect
-                    rec.X = xPos - 1;
-                    rec.Y = yPos + 25;
-                    rec.Width = 12;
-                    rec.Height = 12;
-                    spriteBatch.Draw(commonTextures.Pixel, rec, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                    spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
                 }
 
                 xPos += xInc;
-                labelX += labelXInc;
             }
         }
     }
