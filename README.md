@@ -13,13 +13,6 @@ Useful for speedrunners and streamers alike.
 
 ![image](https://github.com/kfmike/InputVisualizer/assets/57804306/216ddcea-696c-406d-a0ad-9534fba192fc)
 
-# PC Gamepad Button Remapping
-
-From the configure input dialog, you can remap a button to any other button or keyboard key.
-Just click the button in the mapped column you want to reconfigure and the application will listen for the next button or key press:
-
-![image](https://github.com/kfmike/InputVisualizer/assets/57804306/46d4f79a-6004-4960-b65a-8a3a30acc0c7)
-
 # OBS Settings
 
 Add InputVisualizer as a "Game Input" source.
