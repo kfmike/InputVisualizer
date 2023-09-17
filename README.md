@@ -9,8 +9,7 @@ Useful for speedrunners and streamers alike.
 - PC gamepad and keyboard support with customizable input mapping
 - NES, SNES, and Sega Genesis controller support when used in conjunction with RetroSpy or NintendoSpy devices
 - Customizable display with background transparency for easy integration into OBS layouts
-- Displays length of time a button is currently pressed down for
-- Displays how many unique presses for a button in the last second
+- Displays button press frequency and duration metrics
 
 ![image](https://github.com/kfmike/InputVisualizer/assets/57804306/216ddcea-696c-406d-a0ad-9534fba192fc)
 
