@@ -9,6 +9,7 @@ using InputVisualizer.Config;
 using Myra.Graphics2D.UI.ColorPicker;
 using System.IO.Ports;
 using Microsoft.Xna.Framework.Input;
+using Myra.Graphics2D.Brushes;
 
 namespace InputVisualizer.UI
 {
@@ -591,14 +592,9 @@ namespace InputVisualizer.UI
 
                 if (showMapButton)
                 {
-                    var mapButton = new TextButton
-                    {
-                        GridRow = currGridRow,
-                        GridColumn = currColumn,
-                        Text = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key",
-                        Padding = new Thickness(2),
-                        Tag = mapping
-                    };
+                    var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
+                    var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
+                    mapButton.Tag = mapping;
                     mapButton.Click += (s, e) =>
                     {
                         if (_listeningForInput)
@@ -609,7 +605,7 @@ namespace InputVisualizer.UI
                         }
                         _listeningForInput = true;
                         _listeningButton = mapButton;
-                        _listeningButton.Text = "...";
+                        _listeningButton.Text = "Press Button or Key...";
                         _listeningMapping = mapping;
                         _listeningGrid = grid;
                     };
@@ -618,14 +614,8 @@ namespace InputVisualizer.UI
                     currColumn++;
                 }
 
-                var colorButton = new TextButton
-                {
-                    GridRow = currGridRow,
-                    GridColumn = currColumn,
-                    Text = "Color",
-                    Padding = new Thickness(2),
-                    TextColor = mapping.Color,
-                };
+                var colorButton = CreateButton("Color", currGridRow, currColumn, 1, 1);
+                colorButton.TextColor = mapping.Color;
                 colorButton.Click += (s, e) =>
                 {
                     ChooseColor(mapping, colorButton);
@@ -635,15 +625,9 @@ namespace InputVisualizer.UI
 
                 if (currGridRow > gridStartRow)
                 {
-                    var upButton = new TextButton
-                    {
-                        GridColumn = currColumn,
-                        GridRow = currGridRow,
-                        Width = 30,
-                        Text = "↑",
-                        HorizontalAlignment = HorizontalAlignment.Right
-                    };
-
+                    var upButton = CreateButton("↑", currGridRow, currColumn, 1, 1);
+                    upButton.Width = 30;
+                    upButton.HorizontalAlignment = HorizontalAlignment.Right;
                     upButton.Click += (s, e) =>
                     {
                         mappings = UpdateOrder(mappings, mapping, goUp: true);
@@ -655,14 +639,9 @@ namespace InputVisualizer.UI
 
                 if (currGridRow < lastGridRow)
                 {
-                    var downButton = new TextButton
-                    {
-                        GridColumn = currColumn,
-                        GridRow = currGridRow,
-                        Width = 30,
-                        Text = "↓",
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
+                    var downButton = CreateButton("↓", currGridRow, currColumn, 1, 1);
+                    downButton.Width = 30;
+                    downButton.HorizontalAlignment = HorizontalAlignment.Left;
                     downButton.Click += (s, e) =>
                     {
                         mappings = UpdateOrder(mappings, mapping, goUp: false);
@@ -859,14 +838,8 @@ namespace InputVisualizer.UI
             var backgroundLabel = CreateLabel("Background:", 8, 0, 1, 1);
             grid.Widgets.Add(backgroundLabel);
 
-            var colorButton = new TextButton
-            {
-                GridRow = 8,
-                GridColumn = 1,
-                Text = "Color",
-                Padding = new Thickness(2),
-                TextColor = _config.DisplayConfig.BackgroundColor,
-            };
+            var colorButton = CreateButton("Color", 8, 1, 1, 1);
+            colorButton.TextColor = new Color(_config.DisplayConfig.BackgroundColor.R, _config.DisplayConfig.BackgroundColor.G, _config.DisplayConfig.BackgroundColor.B);
             colorButton.Click += (s, e) =>
             {
                 ChooseBackgroundColor(colorButton);
@@ -956,7 +929,7 @@ namespace InputVisualizer.UI
                 {
                     return;
                 }
-                colorButton.TextColor = colorWindow.Color;
+                colorButton.TextColor = new Color(colorWindow.Color.R, colorWindow.Color.G, colorWindow.Color.B);
             };
         }
 
@@ -1003,6 +976,22 @@ namespace InputVisualizer.UI
                 GridRowSpan = rowSpan,
                 GridColumnSpan = colSpan,
                 Padding = new Thickness(2)
+            };
+            return combo;
+        }
+
+        private TextButton CreateButton( string text, int gridRow, int gridCol, int rowSpan, int colSpan )
+        {
+            var combo = new TextButton()
+            {
+                Text = text,
+                GridRow = gridRow,
+                GridColumn = gridCol,
+                GridRowSpan = rowSpan,
+                GridColumnSpan = colSpan,
+                Padding = new Thickness(3),
+                Border = new SolidBrush(Color.DarkGray),
+                BorderThickness = new Thickness(1),
             };
             return combo;
         }
