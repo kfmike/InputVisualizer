@@ -30,7 +30,6 @@ I appreciate your patience and support!
 
 Game framework and UI libraries: 
   - MonoGame (https://www.monogame.net/)
-  - MonoGame.Extended (https://www.monogameextended.net/)
   - Myra (https://github.com/rds1983/Myra)
 
 RetroSpy signal reader code:
