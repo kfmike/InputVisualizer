@@ -6,7 +6,7 @@ Useful for speedrunners and streamers alike.
 
 **Features**
 
-- PC gamepad support with customizable input mapping
+- PC gamepad and keyboard support with customizable input mapping
 - NES, SNES, and Sega Genesis controller support when used in conjunction with RetroSpy or NintendoSpy devices
 - Customizable display with background transparency for easy integration into OBS layouts
 - Displays length of time a button is currently pressed down for
