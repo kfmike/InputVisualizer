@@ -98,9 +98,10 @@ namespace InputVisualizer.Layouts
                 var semiTransFactor = hasActiveObjects ? 1.0f : 0.3f;
                 var innerBoxSemiTransFactor = hasActiveObjects ? 0.75f : 0.25f;
 
-                if (commonTextures.ButtonImages.ContainsKey(kvp.Key) && commonTextures.ButtonImages[kvp.Key] != null)
+                var bType = kvp.Value.UnmappedButtonType.ToString();
+                if (commonTextures.ButtonImages.ContainsKey(bType) && commonTextures.ButtonImages[bType] != null)
                 {
-                    spriteBatch.Draw(commonTextures.ButtonImages[kvp.Key], new Vector2(xPos - 2, baseY), kvp.Value.Color);
+                    spriteBatch.Draw(commonTextures.ButtonImages[bType], new Vector2(xPos - 2, baseY), kvp.Value.Color);
                 }
 
                 squareOuterRect.X = xPos - 1;
