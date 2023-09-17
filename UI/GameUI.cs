@@ -304,7 +304,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
-                _listeningButton.Text = buttonDetected.ToString() + "Button";
+                _listeningButton.Text = buttonDetected.ToString() + " Button";
 
                 foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
                 {
@@ -748,6 +748,7 @@ namespace InputVisualizer.UI
             }
 
             dialog.Content = grid;
+            dialog.ButtonCancel.Visible = false;
             dialog.ShowModal(_desktop);
         }
 
