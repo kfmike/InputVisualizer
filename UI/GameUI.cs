@@ -222,11 +222,11 @@ namespace InputVisualizer.UI
             var buttonDetected = ButtonType.NONE;
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
 
-            var pressedKeys = keyboardState.GetPressedKeys();
-            if (pressedKeys.Length > 0)
-            {
-                keyDetected = pressedKeys[0];
-            }
+            //var pressedKeys = keyboardState.GetPressedKeys();
+            //if (pressedKeys.Length > 0)
+            //{
+            //    keyDetected = pressedKeys[0];
+            //}
 
             if (keyDetected == Keys.None)
             {
@@ -605,7 +605,7 @@ namespace InputVisualizer.UI
                         }
                         _listeningForInput = true;
                         _listeningButton = mapButton;
-                        _listeningButton.Text = "Press Button or Key...";
+                        _listeningButton.Text = "Press Button...";
                         _listeningMapping = mapping;
                         _listeningGrid = grid;
                     };
