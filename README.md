@@ -11,7 +11,7 @@ Useful for speedrunners and streamers alike.
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
 
-![image](https://github.com/kfmike/InputVisualizer/assets/57804306/216ddcea-696c-406d-a0ad-9534fba192fc)
+![image](https://github.com/kfmike/InputVisualizer/assets/57804306/993da0c6-c26b-4080-b35a-cb3d063ad2dc)
 
 # OBS Settings
 
