@@ -790,7 +790,7 @@ namespace InputVisualizer.UI
             grid.Widgets.Add(backgroundLabel);
 
             var colorButton = CreateButton("Color", 8, 1, 1, 1);
-            colorButton.TextColor = new Color(_config.DisplayConfig.BackgroundColor.R, _config.DisplayConfig.BackgroundColor.G, _config.DisplayConfig.BackgroundColor.B);
+            colorButton.TextColor = _config.DisplayConfig.BackgroundColor;
             colorButton.Click += (s, e) =>
             {
                 ChooseBackgroundColor(colorButton);
@@ -880,7 +880,7 @@ namespace InputVisualizer.UI
                 {
                     return;
                 }
-                colorButton.TextColor = new Color(colorWindow.Color.R, colorWindow.Color.G, colorWindow.Color.B);
+                colorButton.TextColor = colorWindow.Color;
             };
         }
 
