@@ -30,6 +30,30 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
+                case GamepadStyle.SNES:
+                    {
+                        ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.Gold);
+                        ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DarkRed);
+                        ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.DarkGreen);
+                        ButtonMappingSet.AddButton(ButtonType.X, ButtonType.X, Color.DeepSkyBlue);
+                        ButtonMappingSet.AddButton(ButtonType.L, ButtonType.L, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.R, ButtonType.R, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
+                        break;
+                    }
+                case GamepadStyle.Genesis:
+                    {
+                        ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.C, ButtonType.C, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.X, ButtonType.X, Color.DarkSlateGray);
+                        ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.DarkSlateGray);
+                        ButtonMappingSet.AddButton(ButtonType.Z, ButtonType.Z, Color.DarkSlateGray);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.MODE, ButtonType.MODE, Color.PowderBlue);
+                        break;
+                    }
                 case GamepadStyle.XBOX:
                     {
                         ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DarkGreen);
