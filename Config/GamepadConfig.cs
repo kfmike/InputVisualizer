@@ -1,4 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using System.Linq;
 
 namespace InputVisualizer.Config
 {
@@ -8,6 +10,7 @@ namespace InputVisualizer.Config
         public GamepadStyle Style { get; set; }
         public bool UseLStickForDpad { get; set; } = false;
         public ButtonMappingSet ButtonMappingSet { get; set; } = new ButtonMappingSet();
+        public bool IsKeyboard => string.Equals(Id, "keyboard", System.StringComparison.InvariantCultureIgnoreCase);
 
         public void GenerateButtonMappings()
         {
@@ -15,7 +18,7 @@ namespace InputVisualizer.Config
             ButtonMappingSet.AddButton(ButtonType.UP, ButtonType.UP, Color.WhiteSmoke);
             ButtonMappingSet.AddButton(ButtonType.DOWN, ButtonType.DOWN, Color.WhiteSmoke);
             ButtonMappingSet.AddButton(ButtonType.LEFT, ButtonType.LEFT, Color.WhiteSmoke);
-            ButtonMappingSet.AddButton(ButtonType.RIGHT,ButtonType.RIGHT, Color.WhiteSmoke);
+            ButtonMappingSet.AddButton(ButtonType.RIGHT, ButtonType.RIGHT, Color.WhiteSmoke);
 
             switch (Style)
             {
@@ -51,6 +54,24 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
+            }
+
+            if (IsKeyboard)
+            {
+                ButtonMappingSet.MapToKey(ButtonType.UP, Keys.Up);
+                ButtonMappingSet.MapToKey(ButtonType.DOWN, Keys.Down);
+                ButtonMappingSet.MapToKey(ButtonType.LEFT, Keys.Left);
+                ButtonMappingSet.MapToKey(ButtonType.RIGHT, Keys.Right);
+                ButtonMappingSet.MapToKey(ButtonType.A, Keys.A);
+                ButtonMappingSet.MapToKey(ButtonType.B, Keys.S);
+                ButtonMappingSet.MapToKey(ButtonType.SELECT, Keys.OemOpenBrackets);
+                ButtonMappingSet.MapToKey(ButtonType.START, Keys.OemCloseBrackets);
+
+                foreach (var mapping in ButtonMappingSet.ButtonMappings.Where(m => m.MappingType != ButtonMappingType.Key))
+                {
+                    mapping.MappingType = ButtonMappingType.Key;
+                    mapping.MappedButtonType = ButtonType.NONE;
+                }
             }
             ButtonMappingSet.InitOrder();
         }
