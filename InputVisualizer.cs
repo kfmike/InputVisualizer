@@ -11,6 +11,7 @@ using System.Linq;
 using InputVisualizer.Config;
 using InputVisualizer.UI;
 using InputVisualizer.Layouts;
+using InputVisualizer.Hooks;
 
 namespace InputVisualizer
 {
@@ -24,6 +25,7 @@ namespace InputVisualizer
         private GameState _gameState;
         private Matrix _matrix = Matrix.CreateScale(2f, 2f, 2f);
         private IControllerReader _serialReader;
+        private KeyboardHook _keyboardHook;
 
         private HorizontalRectangleEngine _horizontalRectangleLayout = new HorizontalRectangleEngine();
         private VerticalRectangleEngine _verticalRectangleLayout = new VerticalRectangleEngine();
@@ -48,7 +50,8 @@ namespace InputVisualizer
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _gameState = new GameState();
-
+            _keyboardHook = new KeyboardHook();
+            _keyboardHook.InstallHook();
             InitGamepads();
             LoadConfig();
             InitUI();
@@ -56,6 +59,12 @@ namespace InputVisualizer
             InitInputSource();
             _gameState.ResetPurgeTimer(_config.DisplayConfig.TurnOffLineSpeed);
             base.Initialize();
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            _keyboardHook?.UninstallHook();
+            base.OnExiting(sender, args);
         }
 
         private void InitUI()
@@ -131,7 +140,7 @@ namespace InputVisualizer
 
             GenerateDefaultGamepadConfigs();
 
-            if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Any())
+            if (string.IsNullOrEmpty(_config.CurrentInputSource))
             {
                 _config.CurrentInputSource = "spy";
             }
@@ -152,6 +161,15 @@ namespace InputVisualizer
                 {
                     gamepadConfig.GenerateButtonMappings();
                 }
+            }
+            var keyboardConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == "keyboard");
+            if (keyboardConfig == null)
+            {
+                keyboardConfig = _config.CreateGamepadConfig("keyboard", GamepadStyle.NES);
+            }
+            if (!keyboardConfig.ButtonMappingSet.ButtonMappings.Any())
+            {
+                keyboardConfig.GenerateButtonMappings();
             }
             _config.RetroSpyConfig.GenerateButtonMappings();
         }
@@ -174,9 +192,14 @@ namespace InputVisualizer
             _gameState.CurrentLayout.Clear(_gameState);
         }
 
+        private void SetCurrentInputMode()
+        {
+            _gameState.CurrentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+        }
+
         private void InitInputSource()
         {
-            _gameState.CurrentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) || !_systemGamePads.Any() ? InputMode.RetroSpy : InputMode.Gamepad;
+            SetCurrentInputMode();
             if (_gameState.CurrentInputMode == InputMode.RetroSpy)
             {
                 InitRetroSpyInputSource();
@@ -233,6 +256,13 @@ namespace InputVisualizer
                 _serialReader.Finish();
                 _serialReader = null;
             }
+
+            if (string.Equals(_config.CurrentInputSource, "keyboard", StringComparison.InvariantCultureIgnoreCase))
+            {
+                _gameState.ActiveGamepadConfig = _config.GamepadConfigs.FirstOrDefault(c => c.IsKeyboard);
+                return;
+            }
+
             if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
             {
                 if (_config.GamepadConfigs.Any())
@@ -407,10 +437,21 @@ namespace InputVisualizer
 
                 if (button.Value.MappingType == ButtonMappingType.Key)
                 {
-                    pressed = keyboardState.IsKeyDown(button.Value.MappedKey);
-                    if (button.Value.IsPressed() != pressed)
+                    if (IsActive)
                     {
-                        _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                        pressed = keyboardState.IsKeyDown(button.Value.MappedKey);
+                        if (button.Value.IsPressed() != pressed)
+                        {
+                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                        }
+                    }
+                    else
+                    {
+                        pressed = KeyboardHook.KeyboardState[button.Value.MappedKey];
+                        if (button.Value.IsPressed() != pressed)
+                        {
+                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                        }
                     }
                     continue;
                 }

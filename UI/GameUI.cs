@@ -68,6 +68,7 @@ namespace InputVisualizer.UI
                 inputSourceCombo.Items.Add(new ListItem(name, Color.White, kvp.Key));
             }
             inputSourceCombo.Items.Add(new ListItem("RetroSpy", Color.White, "spy"));
+            inputSourceCombo.Items.Add(new ListItem("Keyboard", Color.White, "keyboard"));
 
             foreach (var item in inputSourceCombo.Items)
             {
@@ -222,13 +223,13 @@ namespace InputVisualizer.UI
             var buttonDetected = ButtonType.NONE;
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
 
-            //var pressedKeys = keyboardState.GetPressedKeys();
-            //if (pressedKeys.Length > 0)
-            //{
-            //    keyDetected = pressedKeys[0];
-            //}
+            var pressedKeys = keyboardState.GetPressedKeys();
+            if (pressedKeys.Length > 0)
+            {
+                keyDetected = pressedKeys[0];
+            }
 
-            if (keyDetected == Keys.None)
+            if (keyDetected == Keys.None && !_gameState.ActiveGamepadConfig.IsKeyboard)
             {
                 if (_gameState.ActiveGamepadConfig.UseLStickForDpad)
                 {
@@ -325,7 +326,7 @@ namespace InputVisualizer.UI
                 }
                 _listeningForInput = false;
             }
-            else if( keyDetected != Keys.None )
+            else if (keyDetected != Keys.None)
             {
                 _listeningMapping.MappingType = ButtonMappingType.Key;
                 _listeningMapping.MappedButtonType = ButtonType.NONE;
@@ -358,7 +359,7 @@ namespace InputVisualizer.UI
         {
             var buttonMapWidgets = new List<Widget>();
 
-            var gamePadName = systemGamepads[_gameState.ActiveGamepadConfig.Id].Name;
+            var gamePadName = _gameState.ActiveGamepadConfig.IsKeyboard ? "Keyboard" : systemGamepads[_gameState.ActiveGamepadConfig.Id].Name;
             var name = gamePadName.Length > 32 ? gamePadName.Substring(0, 32) : gamePadName;
             var dialog = new Dialog
             {
@@ -592,6 +593,7 @@ namespace InputVisualizer.UI
 
                 if (showMapButton)
                 {
+                    var listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button or Key";
                     var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
                     var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
                     mapButton.Tag = mapping;
@@ -605,7 +607,7 @@ namespace InputVisualizer.UI
                         }
                         _listeningForInput = true;
                         _listeningButton = mapButton;
-                        _listeningButton.Text = "Press Button...";
+                        _listeningButton.Text = listenPrompt;
                         _listeningMapping = mapping;
                         _listeningGrid = grid;
                     };
@@ -980,7 +982,7 @@ namespace InputVisualizer.UI
             return combo;
         }
 
-        private TextButton CreateButton( string text, int gridRow, int gridCol, int rowSpan, int colSpan )
+        private TextButton CreateButton(string text, int gridRow, int gridCol, int rowSpan, int colSpan)
         {
             var combo = new TextButton()
             {

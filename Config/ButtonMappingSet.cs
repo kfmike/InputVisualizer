@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace InputVisualizer.Config
 {
@@ -7,14 +9,28 @@ namespace InputVisualizer.Config
     {
         public List<ButtonMapping> ButtonMappings { get; set; } = new List<ButtonMapping>();
 
-        public void AddButton( ButtonType buttonType, ButtonType mappedButtonType, Color color )
+        public void AddButton(ButtonType buttonType, ButtonType mappedButtonType, Color color)
         {
             ButtonMappings.Add(new ButtonMapping
             {
                 ButtonType = buttonType,
                 MappedButtonType = mappedButtonType,
+                MappingType = ButtonMappingType.Button,
+                MappedKey = Keys.None,
                 Color = color
             });
+        }
+
+        public void MapToKey(ButtonType buttonType, Keys mappedKey)
+        {
+            var mapping = ButtonMappings.FirstOrDefault(m => m.ButtonType == buttonType);
+            if (mapping == null)
+            {
+                return;
+            }
+            mapping.MappingType = ButtonMappingType.Key;
+            mapping.MappedKey = mappedKey;
+            mapping.MappedButtonType = ButtonType.NONE;
         }
 
         public void InitOrder()
