@@ -26,12 +26,22 @@ namespace InputVisualizer.Hooks
 
         public void InstallHook()
         {
-            _hookID = SetHook(_proc);
+            try
+            {
+                _hookID = SetHook(_proc);
+            }
+            catch 
+            {
+                _hookID = IntPtr.Zero;
+            }
         }
 
         public void UninstallHook()
         {
-            UnhookWindowsHookEx(_hookID);
+            if (_hookID != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_hookID);
+            }
         }
 
         private static IntPtr SetHook(LowLevelKeyboardProc proc)

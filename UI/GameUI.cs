@@ -24,6 +24,7 @@ namespace InputVisualizer.UI
         private ButtonMapping _listeningMapping;
         private TextButton _listeningButton;
         private Grid _listeningGrid;
+        private const int MAX_MAP_BUTTON_LENGTH = 20;
 
         public bool ListeningForInput => _listeningForInput;
 
@@ -41,25 +42,12 @@ namespace InputVisualizer.UI
 
         public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads)
         {
-
-            var grid = new Grid
-            {
-                RowSpacing = 8,
-                ColumnSpacing = 8,
-                Padding = new Thickness(3),
-                Margin = new Thickness(3),
-            };
-
-            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-
             var inputSourceCombo = new ComboBox
             {
                 GridColumn = 0,
                 GridRow = 0,
                 Padding = new Thickness(2),
+                AcceptsKeyboardFocus = false
             };
 
             foreach (var kvp in systemGamepads)
@@ -87,62 +75,12 @@ namespace InputVisualizer.UI
                 }
             };
 
-            grid.Widgets.Add(inputSourceCombo);
-
-            var configureInputButton = new TextButton
-            {
-                GridColumn = 1,
-                GridRow = 0,
-                Text = "Input",
-                Padding = new Thickness(2)
-            };
-
-            configureInputButton.Click += (s, a) =>
-            {
-                if (_gameState.CurrentInputMode == InputMode.RetroSpy)
-                {
-                    ShowConfigureRetroSpyDialog();
-                }
-                else
-                {
-                    ShowConfigureGamePadDialog(systemGamepads);
-                }
-            };
-
-            grid.Widgets.Add(configureInputButton);
-
-            var configureDisplayButton = new TextButton
-            {
-                GridColumn = 2,
-                GridRow = 0,
-                Text = "Display",
-                Padding = new Thickness(2)
-            };
-            configureDisplayButton.Click += (s, a) =>
-            {
-                ShowConfigureDisplayDialog();
-            };
-            grid.Widgets.Add(configureDisplayButton);
-
-            var aboutButton = new TextButton
-            {
-                GridColumn = 3,
-                GridRow = 0,
-                Text = "?",
-                Padding = new Thickness(2),
-                Width = 30
-            };
-            aboutButton.Click += (s, a) =>
-            {
-                ShowAboutDialog();
-            };
-            grid.Widgets.Add(aboutButton);
-
             var container = new HorizontalStackPanel();
 
             var menuBar = new HorizontalMenu()
             {
                 Padding = new Thickness(1),
+                AcceptsKeyboardFocus = false
             };
 
             var menuItemInputs = new MenuItem();
@@ -306,7 +244,9 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
-                _listeningButton.Text = buttonDetected.ToString() + " Button";
+                var buttonText = buttonDetected.ToString() + " Button";
+                buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
+                _listeningButton.Text = buttonText;
 
                 foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
                 {
@@ -331,7 +271,9 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Key;
                 _listeningMapping.MappedButtonType = ButtonType.NONE;
                 _listeningMapping.MappedKey = keyDetected;
-                _listeningButton.Text = keyDetected.ToString() + " Key";
+                var buttonText = keyDetected.ToString() + " Key";
+                buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
+                _listeningButton.Text = buttonText;
 
                 foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
                 {
@@ -373,13 +315,15 @@ namespace InputVisualizer.UI
                 ColumnSpacing = 8,
                 Padding = new Thickness(3),
                 Margin = new Thickness(3),
-                HorizontalAlignment = HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Right
             };
-
+            
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
             grid.Widgets.Add(styleLabel);
@@ -402,21 +346,24 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(styleCombo);
 
-            var lStickAsDpadLabel = CreateLabel("Use Left Stick for Dpad:", 1, 0, 1, 3);
-            grid.Widgets.Add(lStickAsDpadLabel);
+            if (!_gameState.ActiveGamepadConfig.IsKeyboard)
+            {
+                var lStickAsDpadLabel = CreateLabel("Use Left Stick for Dpad:", 1, 0, 1, 3);
+                grid.Widgets.Add(lStickAsDpadLabel);
 
-            var lStockAsDpadCheck = new CheckBox
-            {
-                IsChecked = _gameState.ActiveGamepadConfig.UseLStickForDpad,
-                GridRow = 1,
-                GridColumn = 3,
-                HorizontalAlignment = HorizontalAlignment.Left,
-            };
-            lStockAsDpadCheck.Click += (s, e) =>
-            {
-                _gameState.ActiveGamepadConfig.UseLStickForDpad = lStockAsDpadCheck.IsChecked;
-            };
-            grid.Widgets.Add(lStockAsDpadCheck);
+                var lStockAsDpadCheck = new CheckBox
+                {
+                    IsChecked = _gameState.ActiveGamepadConfig.UseLStickForDpad,
+                    GridRow = 1,
+                    GridColumn = 3,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                lStockAsDpadCheck.Click += (s, e) =>
+                {
+                    _gameState.ActiveGamepadConfig.UseLStickForDpad = lStockAsDpadCheck.IsChecked;
+                };
+                grid.Widgets.Add(lStockAsDpadCheck);
+            }
 
             var visibleLabel = CreateLabel("Visible", 2, 0, 1, 1);
             var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
@@ -480,13 +427,14 @@ namespace InputVisualizer.UI
                 ColumnSpacing = 8,
                 Padding = new Thickness(3),
                 Margin = new Thickness(3),
-                HorizontalAlignment = HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Right
             };
 
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var comPortLabel = CreateLabel("COM Port:", 0, 0, 1, 2);
             grid.Widgets.Add(comPortLabel);
@@ -593,9 +541,12 @@ namespace InputVisualizer.UI
 
                 if (showMapButton)
                 {
-                    var listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button or Key";
+                    var listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button/Key...";
                     var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
+                    buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                     var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
+                    
+                    mapButton.Width = 225;
                     mapButton.Tag = mapping;
                     mapButton.Click += (s, e) =>
                     {
@@ -752,9 +703,7 @@ namespace InputVisualizer.UI
 
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-            grid.RowsProportions.Add(new Proportion(ProportionType.Auto));
-
+            
             var lineLengthLabel = CreateLabel("Line Length:", 0, 0, 1, 1);
             grid.Widgets.Add(lineLengthLabel);
 

@@ -5,6 +5,8 @@ namespace InputVisualizer
     {
         XBOX = 0,
         NES = 1,
-        Arcade = 2
+        Arcade = 2,
+        SNES = 3,
+        Genesis = 4
     }
 }
