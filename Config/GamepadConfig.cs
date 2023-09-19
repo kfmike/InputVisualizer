@@ -46,12 +46,12 @@ namespace InputVisualizer.Config
                     {
                         ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.Silver);
                         ButtonMappingSet.AddButton(ButtonType.B, ButtonType.B, Color.Silver);
-                        ButtonMappingSet.AddButton(ButtonType.C, ButtonType.C, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.C, ButtonType.L, Color.Silver);
                         ButtonMappingSet.AddButton(ButtonType.X, ButtonType.X, Color.DarkSlateGray);
                         ButtonMappingSet.AddButton(ButtonType.Y, ButtonType.Y, Color.DarkSlateGray);
-                        ButtonMappingSet.AddButton(ButtonType.Z, ButtonType.Z, Color.DarkSlateGray);
+                        ButtonMappingSet.AddButton(ButtonType.Z, ButtonType.R, Color.DarkSlateGray);
                         ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
-                        ButtonMappingSet.AddButton(ButtonType.MODE, ButtonType.MODE, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.MODE, ButtonType.SELECT, Color.PowderBlue);
                         break;
                     }
                 case GamepadStyle.XBOX:
