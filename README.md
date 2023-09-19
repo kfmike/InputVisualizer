@@ -7,7 +7,7 @@ Useful for speedrunners and streamers alike.
 **Features**
 
 - PC gamepad and keyboard support with customizable input mapping
-- NES, SNES, and Sega Genesis console support when used in conjunction with RetroSpy or NintendoSpy devices
+- RetroSpy/NintendoSpy support for NES, SNES, and Sega Genesis consoles
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
 
