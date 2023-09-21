@@ -24,7 +24,6 @@ namespace InputVisualizer.Usb2Snes
         private const int RESPONSE_BUFFER_CHUNK = 1024;
         private const int INPUT_TIMER_MS = 1;
         private const int ROM_TIMER_MS = 2000;
-        private const int RUNNING_ROM_INDEX = 2;
 
         ClientWebSocket _socket = null;
         private List<string> _deviceList = new List<string>();
@@ -33,8 +32,7 @@ namespace InputVisualizer.Usb2Snes
         private System.Timers.Timer _inputTimer;
         private Usb2SnesState _state = Usb2SnesState.Idle;
         private string _currentDevice = null;
-        private string _currentRunningRom = string.Empty;
-        private System.Timers.Timer _checkRomTimer;
+        private System.Timers.Timer _restartListenTimer;
 
         public Dictionary<Usb2SnesButtonFlags1, bool> ButtonStates1 = new Dictionary<Usb2SnesButtonFlags1, bool>();
         public Dictionary<Usb2SnesButtonFlags2, bool> ButtonStates2 = new Dictionary<Usb2SnesButtonFlags2, bool>();
@@ -48,10 +46,10 @@ namespace InputVisualizer.Usb2Snes
             _inputTimer.AutoReset = false;
             _inputTimer.Enabled = false;
 
-            _checkRomTimer = new System.Timers.Timer(ROM_TIMER_MS);
-            _checkRomTimer.Elapsed += CheckRomElapsed;
-            _checkRomTimer.AutoReset = false;
-            _checkRomTimer.Enabled = false;
+            _restartListenTimer = new System.Timers.Timer(ROM_TIMER_MS);
+            _restartListenTimer.Elapsed += RestartListenElapsed;
+            _restartListenTimer.AutoReset = false;
+            _restartListenTimer.Enabled = false;
 
             foreach (var flag in Enum.GetValues(typeof(Usb2SnesButtonFlags2)))
             {
@@ -68,39 +66,24 @@ namespace InputVisualizer.Usb2Snes
             return new Usb2SnesGame { Name = "Default Game", Address = new string[] { DEFAULT_ADDRESS } };
         }
 
-        private async void CheckRomElapsed(object sender, ElapsedEventArgs e)
+        private async void RestartListenElapsed(object sender, ElapsedEventArgs e)
         {
             if (_state != Usb2SnesState.ListeningError )
             {
                 return;
             }
-            if (!await Connect())
+            
+            if( await StartListening(_currentDevice) )
             {
                 return;
             }
+            _restartListenTimer.Start();
+        }
 
-            if (!await SendRequest(OPCODE_INFO, SNES_SPACE, CancellationToken.None))
-            {
-                return;
-            }
-            var infoResponse = await GetResponse();
-
-            if (infoResponse == null)
-            {
-                return;
-            }
-
-            if (_currentRunningRom != infoResponse.Results[RUNNING_ROM_INDEX])
-            {
-                if( !await StartListening(_currentDevice) )
-                {
-                    _checkRomTimer.Start();
-                }
-            }
-            else
-            {
-                _checkRomTimer.Start();
-            }
+        private void RestartListener()
+        {
+            _state = Usb2SnesState.ListeningError;
+            _restartListenTimer.Start();
         }
 
         public void SetCurrentGame(Usb2SnesGame game)
@@ -161,7 +144,6 @@ namespace InputVisualizer.Usb2Snes
             {
                 return false;
             }
-            _currentRunningRom = infoResponse.Results[RUNNING_ROM_INDEX];
 
             _state = Usb2SnesState.Listening;
             _inputTimer.Start();
@@ -173,7 +155,7 @@ namespace InputVisualizer.Usb2Snes
         {
             _state = Usb2SnesState.Idle;
             _inputTimer.Stop();
-            _checkRomTimer.Stop();
+            _restartListenTimer.Stop();
         }
 
         private async void InputTimerElapsed(object sender, ElapsedEventArgs e)
@@ -235,8 +217,7 @@ namespace InputVisualizer.Usb2Snes
             }
             catch
             {
-                _state = Usb2SnesState.ListeningError;
-                _checkRomTimer.Start();
+                RestartListener();
             }
             finally
             {
@@ -268,8 +249,7 @@ namespace InputVisualizer.Usb2Snes
             {
                 if( _state == Usb2SnesState.Listening )
                 {
-                    _state = Usb2SnesState.ListeningError;
-                    _checkRomTimer.Start();
+                    RestartListener();
                 }
                 return false;
             }
@@ -302,8 +282,7 @@ namespace InputVisualizer.Usb2Snes
             {
                 if (_state == Usb2SnesState.Listening)
                 {
-                    _state = Usb2SnesState.ListeningError;
-                    _checkRomTimer.Start();
+                    RestartListener();
                 }
                 return false;
             }
@@ -325,8 +304,7 @@ namespace InputVisualizer.Usb2Snes
             {
                 if (_state == Usb2SnesState.Listening)
                 {
-                    _state = Usb2SnesState.ListeningError;
-                    _checkRomTimer.Start();
+                    RestartListener();
                 }
                 return null;
             }
