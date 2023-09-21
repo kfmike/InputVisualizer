@@ -1,0 +1,20 @@
+{
+  "games": [
+    {
+      "name": "Default Game",
+      "address": [ "F90718" ]
+    },
+    {
+      "name": "Super Mario World",
+      "address": [ "F50DA4", "F50DA2" ]
+    },
+    {
+      "name": "The Legend of Zelda",
+      "address": [ "F500F2", "F500F0" ]
+    },
+    {
+      "name": "Demons Blazon",
+      "address": [ "F50090", "F50093" ]
+    }
+  ]
+}
