@@ -3,7 +3,9 @@ namespace InputVisualizer
 {
     public enum InputMode
     {
+        None = 0,
         Gamepad,
-        RetroSpy
+        RetroSpy,
+        Usb2Snes
     }
 }

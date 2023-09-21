@@ -30,6 +30,9 @@
     <Folder Include="Fonts\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="usb2snesGameList.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Fonts\DroidSans.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

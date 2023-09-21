@@ -26,12 +26,18 @@ namespace InputVisualizer.UI
         private Grid _listeningGrid;
         private const int MAX_MAP_BUTTON_LENGTH = 20;
 
+        private HorizontalStackPanel _mainMenuContainer;
+        private Dialog _waitMessageBox = null;
+
         public bool ListeningForInput => _listeningForInput;
 
         public event EventHandler<InputSourceChangedEventArgs> InputSourceChanged;
         public event EventHandler GamepadSettingsUpdated;
         public event EventHandler RetroSpySettingsUpdated;
+        public event EventHandler Usb2SnesSettingsUpdated;
         public event EventHandler DisplaySettingsUpdated;
+        public event EventHandler<Usb2SnesGameChangedEventArgs> Usb2SnesGameChanged;
+        public event EventHandler RefreshInputSources;
 
         public GameUI(Game game, ViewerConfig config, GameState gameState)
         {
@@ -40,12 +46,49 @@ namespace InputVisualizer.UI
             _gameState = gameState;
         }
 
-        public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads)
+        public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
         {
+            _mainMenuContainer = new HorizontalStackPanel();
+
+            UpdateMainMenu(systemGamepads, usb2SnesDevices, usb2SnesGameList);
+
+            _desktop = new Desktop
+            {
+                Root = _mainMenuContainer
+            };
+            _desktop.Root.VerticalAlignment = VerticalAlignment.Top;
+            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
+        }
+
+        public void UpdateMainMenu(Dictionary<string, SystemGamePadInfo> systemGamepads, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
+        {
+            _mainMenuContainer.Widgets.Clear();
+
+            var usb2SnesGameListCombo = new ComboBox
+            {
+                Padding = new Thickness(2),
+                AcceptsKeyboardFocus = false
+            };
+            foreach (var game in usb2SnesGameList.Games)
+            {
+                var name = game.Name.Length > 32 ? game.Name.Substring(0, 32) : game.Name;
+                usb2SnesGameListCombo.Items.Add(new ListItem(name, Color.White));
+            }
+            usb2SnesGameListCombo.SelectedItem = usb2SnesGameListCombo.Items[0];
+
+            usb2SnesGameListCombo.SelectedIndexChanged += (s, a) =>
+            {
+                if (Usb2SnesGameChanged != null)
+                {
+                    var args = new Usb2SnesGameChangedEventArgs() { Game = usb2SnesGameListCombo.SelectedItem.Text };
+                    Usb2SnesGameChanged(this, args);
+                }
+            };
+
+            usb2SnesGameListCombo.Visible = !string.IsNullOrEmpty(_config.CurrentInputSource) && _config.CurrentInputSource.Contains("usb2snes");
+
             var inputSourceCombo = new ComboBox
             {
-                GridColumn = 0,
-                GridRow = 0,
                 Padding = new Thickness(2),
                 AcceptsKeyboardFocus = false
             };
@@ -57,6 +100,11 @@ namespace InputVisualizer.UI
             }
             inputSourceCombo.Items.Add(new ListItem("RetroSpy", Color.White, "spy"));
             inputSourceCombo.Items.Add(new ListItem("Keyboard", Color.White, "keyboard"));
+
+            foreach (var device in usb2SnesDevices)
+            {
+                inputSourceCombo.Items.Add(new ListItem($"USB2SNES: '{device}'", Color.White, $"usb2snes:{device}"));
+            }
 
             foreach (var item in inputSourceCombo.Items)
             {
@@ -71,11 +119,10 @@ namespace InputVisualizer.UI
                 if (InputSourceChanged != null)
                 {
                     var args = new InputSourceChangedEventArgs() { InputSourceId = (string)inputSourceCombo.SelectedItem.Tag };
+                    usb2SnesGameListCombo.Visible = args.InputSourceId.Contains("usb2snes");
                     InputSourceChanged(this, args);
                 }
             };
-
-            var container = new HorizontalStackPanel();
 
             var menuBar = new HorizontalMenu()
             {
@@ -84,7 +131,7 @@ namespace InputVisualizer.UI
             };
 
             var menuItemInputs = new MenuItem();
-            menuItemInputs.Text = "Input";
+            menuItemInputs.Text = "Configure Input";
             menuItemInputs.Id = "menuItemInputs";
             menuItemInputs.Selected += (s, a) =>
             {
@@ -92,16 +139,18 @@ namespace InputVisualizer.UI
                 {
                     ShowConfigureRetroSpyDialog();
                 }
-                else
+                else if (_gameState.CurrentInputMode == InputMode.Gamepad)
                 {
                     ShowConfigureGamePadDialog(systemGamepads);
                 }
+                else
+                {
+                    ShowConfigureUsb2SnesDialog();
+                }
             };
-            container.Widgets.Add(inputSourceCombo);
-            container.Widgets.Add(menuBar);
 
             var menuItemDisplay = new MenuItem();
-            menuItemDisplay.Text = "Display";
+            menuItemDisplay.Text = "Configure Display";
             menuItemDisplay.Id = "menuItemDisplay";
 
             menuItemDisplay.Selected += (s, a) =>
@@ -109,11 +158,21 @@ namespace InputVisualizer.UI
                 ShowConfigureDisplayDialog();
             };
 
+            var menuItemRefresh = new MenuItem();
+            menuItemRefresh.Text = "Refresh Sources";
+            menuItemRefresh.Id = "menuItemRefresh";
+
+            menuItemRefresh.Selected += (s, a) =>
+            {
+                RefreshInputSources?.Invoke(this, new EventArgs());
+            };
+
             var menuItemSettings = new MenuItem();
-            menuItemSettings.Text = "Configure";
+            menuItemSettings.Text = "Actions";
             menuItemSettings.Id = "menuItemSettings";
             menuItemSettings.Items.Add(menuItemInputs);
             menuItemSettings.Items.Add(menuItemDisplay);
+            menuItemSettings.Items.Add(menuItemRefresh);
 
             var menuItemAbout = new MenuItem();
             menuItemAbout.Text = "About";
@@ -126,12 +185,9 @@ namespace InputVisualizer.UI
             menuBar.Items.Add(menuItemSettings);
             menuBar.Items.Add(menuItemAbout);
 
-            _desktop = new Desktop
-            {
-                Root = container
-            };
-            _desktop.Root.VerticalAlignment = VerticalAlignment.Top;
-            _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
+            _mainMenuContainer.Widgets.Add(inputSourceCombo);
+            _mainMenuContainer.Widgets.Add(usb2SnesGameListCombo);
+            _mainMenuContainer.Widgets.Add(menuBar);
         }
 
         public void Render()
@@ -317,7 +373,7 @@ namespace InputVisualizer.UI
                 Margin = new Thickness(3),
                 HorizontalAlignment = HorizontalAlignment.Right
             };
-            
+
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
@@ -505,6 +561,59 @@ namespace InputVisualizer.UI
             dialog.ShowModal(_desktop);
         }
 
+        private void ShowConfigureUsb2SnesDialog()
+        {
+            var buttonMapWidgets = new List<Widget>();
+
+            var dialog = new Dialog
+            {
+                Title = "USB2SNES Config",
+                TitleTextColor = Color.DarkSeaGreen
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var visibleLabel = CreateLabel("Visible", 0, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 0, 1, 1, 1);
+            var colorLabel = CreateLabel("Color", 0, 2, 1, 1);
+            var orderLabel = CreateLabel("Order", 0, 3, 1, 2);
+            orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            grid.Widgets.Add(visibleLabel);
+            grid.Widgets.Add(buttonLabel);
+            grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(orderLabel);
+
+            DrawButtonMappings(_config.Usb2SnesConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 1);
+
+            dialog.Content = grid;
+            dialog.ConfirmKey = Keys.None;
+            dialog.CloseKey = Keys.None;
+            dialog.ButtonCancel.Visible = false;
+            dialog.Closed += (s, a) =>
+            {
+                if (!dialog.Result)
+                {
+                    return;
+                }
+                Usb2SnesSettingsUpdated?.Invoke(this, EventArgs.Empty);
+            };
+            dialog.ShowModal(_desktop);
+        }
+
         private void DrawButtonMappings(List<ButtonMapping> mappings, Grid grid, List<Widget> currentWidgets, int gridStartRow, bool showMapButton = false)
         {
             var currGridRow = gridStartRow;
@@ -545,7 +654,7 @@ namespace InputVisualizer.UI
                     var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
                     buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                     var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
-                    
+
                     mapButton.Width = 225;
                     mapButton.Tag = mapping;
                     mapButton.Click += (s, e) =>
@@ -703,7 +812,7 @@ namespace InputVisualizer.UI
 
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
-            
+
             var lineLengthLabel = CreateLabel("Line Length:", 0, 0, 1, 1);
             grid.Widgets.Add(lineLengthLabel);
 
@@ -850,6 +959,26 @@ namespace InputVisualizer.UI
             messageBox.ShowModal(_desktop);
         }
 
+        public void ShowWaitMessage(string title, string message)
+        {
+            _waitMessageBox = Dialog.CreateMessageBox(title, message);
+            _waitMessageBox.TitleTextColor = Color.DarkSeaGreen;
+            _waitMessageBox.CloseKey = Keys.None;
+            _waitMessageBox.CloseButton.Visible = false;
+            _waitMessageBox.ButtonOk.Visible = false;
+            _waitMessageBox.ButtonCancel.Visible = false;
+            _waitMessageBox.ShowModal(_desktop);
+        }
+
+        public void HideWaitMessage()
+        {
+            if( _waitMessageBox == null )
+            {
+                return;
+            }
+            _waitMessageBox.Close();
+            _waitMessageBox = null;
+        }
         private void ChooseColor(ButtonMapping mapping, TextButton colorButton)
         {
             var colorWindow = new ColorPickerDialog();

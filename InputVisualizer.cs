@@ -12,6 +12,8 @@ using InputVisualizer.Config;
 using InputVisualizer.UI;
 using InputVisualizer.Layouts;
 using InputVisualizer.Hooks;
+using InputVisualizer.Usb2Snes;
+using System.Threading.Tasks;
 
 namespace InputVisualizer
 {
@@ -21,11 +23,13 @@ namespace InputVisualizer
         private SpriteBatch _spriteBatch;
         private CommonTextures _commonTextures = new CommonTextures();
         private ViewerConfig _config;
+        private Usb2SnesGameList _usb2SnesGameList;
         private GameUI _ui;
         private GameState _gameState;
         private Matrix _matrix = Matrix.CreateScale(2f, 2f, 2f);
         private IControllerReader _serialReader;
         private KeyboardHook _keyboardHook;
+        private Usb2SnesClient _usb2snesClient;
 
         private HorizontalRectangleEngine _horizontalRectangleLayout = new HorizontalRectangleEngine();
         private VerticalRectangleEngine _verticalRectangleLayout = new VerticalRectangleEngine();
@@ -34,6 +38,7 @@ namespace InputVisualizer
         private const int DEFAULT_SCREEN_WIDTH = 1024;
         private const int DEFAULT_SCREEN_HEIGHT = 768;
         private const string CONTENT_ROOT = "Content";
+        private const string USB2SNES_GAME_LIST_PATH = @"usb2snesGameList.json";
 
         public InputVisualizer()
         {
@@ -52,17 +57,22 @@ namespace InputVisualizer
             _gameState = new GameState();
             _keyboardHook = new KeyboardHook();
             _keyboardHook.InstallHook();
+            _usb2snesClient = new Usb2SnesClient();
+
             InitGamepads();
+            RefreshUsb2SnesDeviceList().GetAwaiter().GetResult();
             LoadConfig();
             InitUI();
             SetCurrentLayout();
-            InitInputSource();
+            InitInputSource().GetAwaiter().GetResult();
             _gameState.ResetPurgeTimer(_config.DisplayConfig.TurnOffLineSpeed);
             base.Initialize();
         }
 
         protected override void OnExiting(object sender, EventArgs args)
         {
+            CloseCurrentInputMode();
+            _usb2snesClient.StopUsb2SnesClient().GetAwaiter().GetResult();
             _keyboardHook?.UninstallHook();
             base.OnExiting(sender, args);
         }
@@ -73,25 +83,57 @@ namespace InputVisualizer
             _ui.InputSourceChanged += UI_InputSourceChanged;
             _ui.GamepadSettingsUpdated += UI_GamepadSettingsUpdated;
             _ui.RetroSpySettingsUpdated += UI_RetroSpySettingsUpdated;
+            _ui.Usb2SnesSettingsUpdated += UI_Usb2SnesSettingsUpdated;
             _ui.DisplaySettingsUpdated += UI_DisplaySettingsUpdated;
-            _ui.Init(_systemGamePads);
+            _ui.Usb2SnesGameChanged += UI_Usb2SnesGameChanged;
+            _ui.RefreshInputSources += UI_RefreshInputSources;
+            _ui.Init(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
         }
 
-        private void UI_InputSourceChanged(object sender, InputSourceChangedEventArgs e)
+        private async void UI_RefreshInputSources(object sender, EventArgs e)
         {
-            SetCurrentInputSource(e.InputSourceId);
+            _ui.ShowWaitMessage("Please Wait", "Refreshing input sources...");
+            CloseCurrentInputMode();
+            InitGamepads();
+            await RefreshUsb2SnesDeviceList();
+            _ui.UpdateMainMenu(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
+            await InitInputSource();
+            _ui.HideWaitMessage();
         }
 
-        private void UI_GamepadSettingsUpdated(object sender, EventArgs e)
+        private void UI_Usb2SnesGameChanged(object sender, Usb2SnesGameChangedEventArgs e)
+        {
+            var selectedGame = _usb2SnesGameList.Games.FirstOrDefault(g => string.Equals(g.Name, e.Game, StringComparison.InvariantCultureIgnoreCase));
+            var tokens = _config.CurrentInputSource.Split(":");
+            if (tokens.Length < 2)
+            {
+                return;
+            }
+            _usb2snesClient.SetCurrentGame(selectedGame);
+            _config.Save();
+        }
+
+        private async void UI_InputSourceChanged(object sender, InputSourceChangedEventArgs e)
+        {
+            await SetCurrentInputSource(e.InputSourceId);
+        }
+
+        private async void UI_GamepadSettingsUpdated(object sender, EventArgs e)
         {
             _config.Save();
-            InitInputSource();
+            await InitInputSource();
         }
 
-        private void UI_RetroSpySettingsUpdated(object sender, EventArgs e)
+        private async void UI_RetroSpySettingsUpdated(object sender, EventArgs e)
         {
             _config.Save();
-            InitInputSource();
+            await InitInputSource();
+        }
+
+        private async void UI_Usb2SnesSettingsUpdated(object sender, EventArgs e)
+        {
+            _config.Save();
+            await InitInputSource();
         }
 
         private void UI_DisplaySettingsUpdated(object sender, EventArgs e)
@@ -102,11 +144,11 @@ namespace InputVisualizer
             _config.Save();
         }
 
-        private void SetCurrentInputSource(string id)
+        private async Task SetCurrentInputSource(string id)
         {
             _config.CurrentInputSource = id;
             _config.Save();
-            InitInputSource();
+            await InitInputSource();
         }
 
         private void InitGamepads()
@@ -128,6 +170,12 @@ namespace InputVisualizer
             }
         }
 
+        private async Task RefreshUsb2SnesDeviceList()
+        {
+            await _usb2snesClient.GetDeviceList();
+            LoadUsb2SnesGameList();
+        }
+
         private void LoadConfig()
         {
             string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ViewerConfig.CONFIG_PATH);
@@ -146,6 +194,17 @@ namespace InputVisualizer
             }
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
             _config.Save();
+        }
+
+        private void LoadUsb2SnesGameList()
+        {
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), USB2SNES_GAME_LIST_PATH);
+            if (File.Exists(path))
+            {
+                var gameListTxt = File.ReadAllText(path);
+                _usb2SnesGameList = JsonConvert.DeserializeObject<Usb2SnesGameList>(gameListTxt) ?? new Usb2SnesGameList();
+            }
+            else { _usb2SnesGameList = new Usb2SnesGameList(); }
         }
 
         private void GenerateDefaultGamepadConfigs()
@@ -172,6 +231,7 @@ namespace InputVisualizer
                 keyboardConfig.GenerateButtonMappings();
             }
             _config.RetroSpyConfig.GenerateButtonMappings();
+            _config.Usb2SnesConfig.GenerateButtonMappings();
         }
 
         private void SetCurrentLayout()
@@ -194,31 +254,64 @@ namespace InputVisualizer
 
         private void SetCurrentInputMode()
         {
-            _gameState.CurrentInputMode = string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase) ? InputMode.RetroSpy : InputMode.Gamepad;
+            if (string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase))
+            {
+                _gameState.CurrentInputMode = InputMode.RetroSpy;
+            }
+            else
+            {
+                var tokens = _config.CurrentInputSource.Split(":");
+                if (tokens.Length > 1 && string.Equals("usb2snes", tokens[0], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    _gameState.CurrentInputMode = InputMode.Usb2Snes;
+                }
+                else
+                {
+                    _gameState.CurrentInputMode = InputMode.Gamepad;
+                }
+            }
         }
 
-        private void InitInputSource()
+        private async Task InitInputSource()
         {
+            CloseCurrentInputMode();
             SetCurrentInputMode();
-            if (_gameState.CurrentInputMode == InputMode.RetroSpy)
+            switch (_gameState.CurrentInputMode)
             {
-                InitRetroSpyInputSource();
-            }
-            else if (_gameState.CurrentInputMode == InputMode.Gamepad)
-            {
-                InitGamepadInputSource();
+                case InputMode.RetroSpy:
+                    {
+                        InitRetroSpyInputSource();
+                        break;
+                    }
+                case InputMode.Usb2Snes:
+                    {
+                        await InitUsb2SnesInputSource();
+                        break;
+                    }
+                case InputMode.Gamepad:
+                    {
+                        InitGamepadInputSource();
+                        break;
+                    }
             }
             InitButtons();
+        }
+
+        private void CloseCurrentInputMode()
+        {
+            if (_serialReader != null)
+            {
+                _serialReader.Finish();
+                _serialReader = null;
+            }
+            _usb2snesClient.StopListening();
+            _gameState.CurrentInputMode = InputMode.RetroSpy;
         }
 
         private void InitRetroSpyInputSource()
         {
             if (!string.IsNullOrEmpty(_config.RetroSpyConfig.ComPortName))
             {
-                if (_serialReader != null)
-                {
-                    _serialReader.Finish();
-                }
                 try
                 {
                     switch (_config.RetroSpyConfig.ControllerType)
@@ -249,14 +342,28 @@ namespace InputVisualizer
             }
         }
 
+        private async Task InitUsb2SnesInputSource()
+        {
+            try
+            {
+                var tokens = _config.CurrentInputSource.Split(":");
+                if (tokens.Length < 2)
+                {
+                    return;
+                }
+                if (!await _usb2snesClient.StartListening(tokens[1]))
+                {
+                    _ui.ShowMessage("USB2SNES Error", "Failed to attach to device.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _ui.ShowMessage("USB2SNES Error", ex.Message);
+            }
+        }
+
         private void InitGamepadInputSource()
         {
-            if (_serialReader != null)
-            {
-                _serialReader.Finish();
-                _serialReader = null;
-            }
-
             if (string.Equals(_config.CurrentInputSource, "keyboard", StringComparison.InvariantCultureIgnoreCase))
             {
                 _gameState.ActiveGamepadConfig = _config.GamepadConfigs.FirstOrDefault(c => c.IsKeyboard);
@@ -316,6 +423,11 @@ namespace InputVisualizer
                         InitGamepadButtons();
                         break;
                     }
+                case InputMode.Usb2Snes:
+                    {
+                        InitUsb2SnesButtons();
+                        break;
+                    }
             }
 
             _gameState.CurrentLayout?.Clear(_gameState);
@@ -357,6 +469,15 @@ namespace InputVisualizer
                         }
                         break;
                     }
+            }
+        }
+
+        private void InitUsb2SnesButtons()
+        {
+            _gameState.ButtonStates.Clear();
+            foreach (var mapping in _config.Usb2SnesConfig.ButtonMappingSet.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+            {
+                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
             }
         }
 
@@ -411,6 +532,10 @@ namespace InputVisualizer
                 {
                     ReadGamepadInputs();
                 }
+                else if (_gameState.CurrentInputMode == InputMode.Usb2Snes)
+                {
+                    ReadUsb2SnesInputs();
+                }
 
                 foreach (var button in _gameState.ButtonStates)
                 {
@@ -421,6 +546,83 @@ namespace InputVisualizer
                 _gameState.CurrentLayout?.Update(_config, _gameState, gameTime);
             }
             base.Update(gameTime);
+        }
+
+        private void ReadUsb2SnesInputs()
+        {
+            var timeStamp = DateTime.Now;
+            foreach (var button in _gameState.ButtonStates)
+            {
+                var pressed = false;
+
+                switch (button.Key)
+                {
+                    case "UP":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Up];
+                            break;
+                        }
+                    case "DOWN":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Down];
+                            break;
+                        }
+                    case "LEFT":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Left];
+                            break;
+                        }
+                    case "RIGHT":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Right];
+                            break;
+                        }
+                    case "SELECT":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Select];
+                            break;
+                        }
+                    case "START":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Start];
+                            break;
+                        }
+                    case "A":
+                        {
+                            pressed = _usb2snesClient.ButtonStates1[Usb2SnesButtonFlags1.A];
+                            break;
+                        }
+                    case "B":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.B];
+                            break;
+                        }
+                    case "X":
+                        {
+                            pressed = _usb2snesClient.ButtonStates1[Usb2SnesButtonFlags1.X];
+                            break;
+                        }
+                    case "Y":
+                        {
+                            pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Y];
+                            break;
+                        }
+                    case "L":
+                        {
+                            pressed = _usb2snesClient.ButtonStates1[Usb2SnesButtonFlags1.L];
+                            break;
+                        }
+                    case "R":
+                        {
+                            pressed = _usb2snesClient.ButtonStates1[Usb2SnesButtonFlags1.R];
+                            break;
+                        }
+                }
+                if (button.Value.IsPressed() != pressed)
+                {
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                }
+            }
         }
 
         private void ReadGamepadInputs()
