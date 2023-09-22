@@ -108,7 +108,7 @@ namespace InputVisualizer.UI
 
             foreach (var device in usb2SnesDevices)
             {
-                inputSourceCombo.Items.Add(new ListItem($"USB2SNES: '{device}'", Color.White, $"usb2snes:{device}"));
+                inputSourceCombo.Items.Add(new ListItem($"USB2SNES: '{device}'", Color.White, $"usb2snes||{device}"));
             }
 
             foreach (var item in inputSourceCombo.Items)

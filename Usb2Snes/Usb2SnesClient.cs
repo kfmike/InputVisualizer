@@ -111,7 +111,7 @@ namespace InputVisualizer.Usb2Snes
                     return _deviceList;
                 }
 
-                await SendRequest(OPCODE_DEVICE_LIST, SNES_SPACE, CreateCancellationToken(1));
+                await SendRequest(OPCODE_DEVICE_LIST, SNES_SPACE, CreateCancellationToken());
                 var response = await GetResponse();
 
                 if (response != null)
@@ -242,11 +242,10 @@ namespace InputVisualizer.Usb2Snes
 
             _socket?.Dispose();
             _socket = new ClientWebSocket();
-            var source = new CancellationTokenSource();
-            source.CancelAfter(TimeSpan.FromSeconds(1));
+
             try
             {
-                await _socket.ConnectAsync(new Uri(SERVER_URL), source.Token);
+                await _socket.ConnectAsync(new Uri(SERVER_URL), CreateCancellationToken());
                 return _socket.State == WebSocketState.Open;
             }
             catch
@@ -263,7 +262,7 @@ namespace InputVisualizer.Usb2Snes
         {
             if (_socket?.State == WebSocketState.Open)
             {
-                await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed by client", CreateCancellationToken(1));
+                await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed by client", CreateCancellationToken());
             }
             _socket?.Dispose();
             _socket = null;
@@ -279,7 +278,7 @@ namespace InputVisualizer.Usb2Snes
                 }
                 var command = new Usb2SnesRequest { Opcode = opCode, Space = space, Operands = operands ?? Array.Empty<string>() };
                 var request = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(command));
-                await _socket.SendAsync(new ArraySegment<byte>(request), WebSocketMessageType.Text, true, CreateCancellationToken(1));
+                await _socket.SendAsync(new ArraySegment<byte>(request), WebSocketMessageType.Text, true, CreateCancellationToken());
                 return _socket?.State == WebSocketState.Open;
             }
             catch
@@ -301,7 +300,7 @@ namespace InputVisualizer.Usb2Snes
                     return null;
                 }
                 var buffer = new byte[RESPONSE_BUFFER_CHUNK];
-                var result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), CreateCancellationToken(1));
+                var result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), CreateCancellationToken());
                 return JsonConvert.DeserializeObject<Usb2SnesResponse>(Encoding.UTF8.GetString(buffer, 0, result.Count));
             }
             catch
@@ -322,7 +321,7 @@ namespace InputVisualizer.Usb2Snes
             }
         }
 
-        private CancellationToken CreateCancellationToken(int seconds)
+        private CancellationToken CreateCancellationToken(double seconds = 1.0)
         {
             var source = new CancellationTokenSource();
             source.CancelAfter(TimeSpan.FromSeconds(seconds));
