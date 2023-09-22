@@ -104,7 +104,7 @@ namespace InputVisualizer
         private void UI_Usb2SnesGameChanged(object sender, Usb2SnesGameChangedEventArgs e)
         {
             var selectedGame = _usb2SnesGameList.Games.FirstOrDefault(g => string.Equals(g.Name, e.Game, StringComparison.InvariantCultureIgnoreCase));
-            var tokens = _config.CurrentInputSource.Split(":");
+            var tokens = _config.CurrentInputSource.Split("||");
             if (tokens.Length < 2)
             {
                 return;
@@ -190,7 +190,7 @@ namespace InputVisualizer
 
             if (string.IsNullOrEmpty(_config.CurrentInputSource))
             {
-                _config.CurrentInputSource = "spy";
+                _config.CurrentInputSource = "keyboard";
             }
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
             _config.Save();
@@ -260,7 +260,7 @@ namespace InputVisualizer
             }
             else
             {
-                var tokens = _config.CurrentInputSource.Split(":");
+                var tokens = _config.CurrentInputSource.Split("||");
                 if (tokens.Length > 1 && string.Equals("usb2snes", tokens[0], StringComparison.InvariantCultureIgnoreCase))
                 {
                     _gameState.CurrentInputMode = InputMode.Usb2Snes;
@@ -305,7 +305,7 @@ namespace InputVisualizer
                 _serialReader = null;
             }
             _usb2snesClient.StopListening();
-            _gameState.CurrentInputMode = InputMode.RetroSpy;
+            _gameState.CurrentInputMode = InputMode.Gamepad;
         }
 
         private void InitRetroSpyInputSource()
@@ -346,7 +346,7 @@ namespace InputVisualizer
         {
             try
             {
-                var tokens = _config.CurrentInputSource.Split(":");
+                var tokens = _config.CurrentInputSource.Split("||");
                 if (tokens.Length < 2)
                 {
                     return;

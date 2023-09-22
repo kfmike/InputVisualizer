@@ -10,7 +10,7 @@ namespace InputVisualizer
     public class GameState
     {
         public GamepadConfig ActiveGamepadConfig { get; set; } = null;
-        public InputMode CurrentInputMode { get; set; } = InputMode.RetroSpy;
+        public InputMode CurrentInputMode { get; set; } = InputMode.Gamepad;
         public PlayerIndex CurrentPlayerIndex { get; set; } = PlayerIndex.One;
         public DateTime MinAge { get; set; }
         public VisualizerEngine CurrentLayout { get; set; }
