@@ -68,12 +68,12 @@ namespace InputVisualizer.Usb2Snes
 
         private async void RestartListenElapsed(object sender, ElapsedEventArgs e)
         {
-            if (_state != Usb2SnesState.ListeningError )
+            if (_state != Usb2SnesState.ListeningError)
             {
                 return;
             }
-            
-            if( await StartListening(_currentDevice) )
+
+            if (await StartListening(_currentDevice))
             {
                 return;
             }
@@ -93,8 +93,12 @@ namespace InputVisualizer.Usb2Snes
 
         public async Task StopUsb2SnesClient()
         {
-            StopListening();
-            await Disconnect();
+            try
+            {
+                StopListening();
+                await Disconnect();
+            }
+            catch { }
         }
 
         public async Task<List<string>> GetDeviceList()
@@ -147,7 +151,7 @@ namespace InputVisualizer.Usb2Snes
 
             _state = Usb2SnesState.Listening;
             _inputTimer.Start();
-            
+
             return true;
         }
 
@@ -175,7 +179,7 @@ namespace InputVisualizer.Usb2Snes
                     }
                 }
                 byte[] inputData = new byte[2];
-                
+
                 if (_selectedGame.Address.Length == 1)
                 {
                     if (!await SendRequest(OPCODE_GETADDRESS, SNES_SPACE, CancellationToken.None, new string[] { _selectedGame.Address[0], "2" }))
@@ -198,7 +202,7 @@ namespace InputVisualizer.Usb2Snes
                     {
                         return;
                     }
-                    
+
                     await GetBinaryResponse(oneByteBuffer);
                     inputData[1] = oneByteBuffer[0];
                 }
@@ -247,7 +251,7 @@ namespace InputVisualizer.Usb2Snes
             }
             catch
             {
-                if( _state == Usb2SnesState.Listening )
+                if (_state == Usb2SnesState.Listening)
                 {
                     RestartListener();
                 }
