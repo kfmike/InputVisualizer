@@ -5,6 +5,10 @@
       "address": [ "F90718" ]
     },
     {
+      "name": "Super Metroid",
+      "address": [ "F5008B" ]
+    },
+    {
       "name": "Super Mario World",
       "address": [ "F50DA4", "F50DA2" ]
     },
@@ -15,6 +19,14 @@
     {
       "name": "Demons Blazon",
       "address": [ "F50090", "F50093" ]
+    },
+    {
+      "name": "CV 4/Dracula X",
+      "address": [ "F50020" ]
+    },
+    {
+      "name": "Yoshi's Island'",
+      "address": [ "F50035" ]
     }
   ]
 }
