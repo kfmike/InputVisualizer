@@ -38,7 +38,7 @@ namespace InputVisualizer.UI
         public event EventHandler DisplaySettingsUpdated;
         public event EventHandler<Usb2SnesGameChangedEventArgs> Usb2SnesGameChanged;
         public event EventHandler RefreshInputSources;
-
+        
         public GameUI(Game game, ViewerConfig config, GameState gameState)
         {
             MyraEnvironment.Game = game;
@@ -66,8 +66,11 @@ namespace InputVisualizer.UI
 
             var usb2SnesGameListCombo = new ComboBox
             {
-                Padding = new Thickness(2),
-                AcceptsKeyboardFocus = false
+                Padding = new Thickness(3),
+                AcceptsKeyboardFocus = false,
+                Border = new SolidBrush(Color.DarkGray),
+                BorderThickness = new Thickness(1),
+
             };
             foreach (var game in usb2SnesGameList.Games)
             {
@@ -89,8 +92,10 @@ namespace InputVisualizer.UI
 
             var inputSourceCombo = new ComboBox
             {
-                Padding = new Thickness(2),
-                AcceptsKeyboardFocus = false
+                Padding = new Thickness(3),
+                AcceptsKeyboardFocus = false,
+                Border = new SolidBrush(Color.DarkGray),
+                BorderThickness = new Thickness(1),
             };
 
             foreach (var kvp in systemGamepads)
@@ -126,12 +131,14 @@ namespace InputVisualizer.UI
 
             var menuBar = new HorizontalMenu()
             {
-                Padding = new Thickness(1),
-                AcceptsKeyboardFocus = false
+                Padding = new Thickness(3),
+                AcceptsKeyboardFocus = false,
+                Border = new SolidBrush(Color.DarkGray),
+                BorderThickness = new Thickness(1),
             };
 
             var menuItemInputs = new MenuItem();
-            menuItemInputs.Text = "Configure Input";
+            menuItemInputs.Text = "Configure Current Input";
             menuItemInputs.Id = "menuItemInputs";
             menuItemInputs.Selected += (s, a) =>
             {
@@ -159,20 +166,13 @@ namespace InputVisualizer.UI
             };
 
             var menuItemRefresh = new MenuItem();
-            menuItemRefresh.Text = "Refresh Sources";
+            menuItemRefresh.Text = "Refresh Input Sources";
             menuItemRefresh.Id = "menuItemRefresh";
 
             menuItemRefresh.Selected += (s, a) =>
             {
                 RefreshInputSources?.Invoke(this, new EventArgs());
             };
-
-            var menuItemSettings = new MenuItem();
-            menuItemSettings.Text = "Actions";
-            menuItemSettings.Id = "menuItemSettings";
-            menuItemSettings.Items.Add(menuItemInputs);
-            menuItemSettings.Items.Add(menuItemDisplay);
-            menuItemSettings.Items.Add(menuItemRefresh);
 
             var menuItemAbout = new MenuItem();
             menuItemAbout.Text = "About";
@@ -182,8 +182,15 @@ namespace InputVisualizer.UI
                 ShowAboutDialog();
             };
 
-            menuBar.Items.Add(menuItemSettings);
-            menuBar.Items.Add(menuItemAbout);
+            var menuItemActions = new MenuItem();
+            menuItemActions.Text = "Menu";
+            menuItemActions.Id = "menuItemActions";
+            menuItemActions.Items.Add(menuItemInputs);
+            menuItemActions.Items.Add(menuItemDisplay);
+            menuItemActions.Items.Add(menuItemRefresh);
+            menuItemActions.Items.Add(menuItemAbout);
+
+            menuBar.Items.Add(menuItemActions);
 
             _mainMenuContainer.Widgets.Add(inputSourceCombo);
             _mainMenuContainer.Widgets.Add(usb2SnesGameListCombo);
@@ -1062,7 +1069,7 @@ namespace InputVisualizer.UI
 
         private TextButton CreateButton(string text, int gridRow, int gridCol, int rowSpan, int colSpan)
         {
-            var combo = new TextButton()
+            var button = new TextButton()
             {
                 Text = text,
                 GridRow = gridRow,
@@ -1073,7 +1080,7 @@ namespace InputVisualizer.UI
                 Border = new SolidBrush(Color.DarkGray),
                 BorderThickness = new Thickness(1),
             };
-            return combo;
+            return button;
         }
     }
 }
