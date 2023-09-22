@@ -30,6 +30,9 @@
     <Folder Include="Fonts\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="usb2snesGameList.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
