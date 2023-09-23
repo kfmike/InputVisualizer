@@ -1,7 +1,7 @@
 # InputVisualizer
 
 View your PC gamepad and classic retro console controller inputs in an entirely new way.
-InputVisualizer allows you to see your controller input graphically over time, including lenghth press and button mashing frequency.
+InputVisualizer allows you to see your controller input graphically over time, including press duration and button mash frequency.
 Useful for speedrunners and streamers alike.
 
 **Features**
