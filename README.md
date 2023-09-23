@@ -8,7 +8,7 @@ Useful for speedrunners and streamers alike.
 
 - PC gamepad and keyboard support with customizable input mapping
 - RetroSpy/NintendoSpy support for NES, SNES, and Sega Genesis consoles
-- Usb2Snes/QUsb2Snes/SNI support for SNES hardwares for a number of games (more games to come)
+- SD2SNES/FXPAK PRO support for SNES hardware using Usb2Snes/QUsb2Snes/SNI
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
 
@@ -21,6 +21,15 @@ Add InputVisualizer as a "Game Input" source.
 **Transparent Background**
 - Check "Allow Transparency" in the game input source properties.
 - Set the InputVisualizer background color alpha value to zero (default)
+
+# SD2SNES/FXPAK PRO Game Support
+Please check the following document to see an incomplete list of games that are currently supported:
+
+https://docs.google.com/spreadsheets/d/1nq40DwiOmKDQm1oxOPezcIoIM7wi8jIx71q46V8Fz0k/edit?usp=sharing
+
+You can update InputVisualizer with the current list by replacing the usb2snesGameList.json file with the most recent version here:
+
+https://github.com/kfmike/InputVisualizer/blob/master/usb2snesGameList.json
 
 # Disclaimer
 This is a fun personal project for me, and as such I have tailored the features to what I do most often.
