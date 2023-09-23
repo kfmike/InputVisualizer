@@ -21,6 +21,10 @@
       "address": [ "F50EC6" ]
     },
     {
+      "name": "SOS",
+      "address": [ "F501C1", "F501C0" ]
+    },
+    {
       "name": "Soul Blazer",
       "address": [ "F50322" ]
     },
