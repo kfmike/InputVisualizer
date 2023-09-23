@@ -5,6 +5,26 @@
       "address": [ "F90718" ]
     },
     {
+      "name": "Actraiser",
+      "address": [ "F500A0" ]
+    },
+    {
+      "name": "CV 4/Dracula X",
+      "address": [ "F50020" ]
+    },
+    {
+      "name": "Demons Blazon",
+      "address": [ "F50090", "F50093" ]
+    },
+    {
+      "name": "Secret of Evermore",
+      "address": [ "F50EC6", "F50EC7" ]
+    },
+    {
+      "name": "Soul Blazer",
+      "address": [ "F50322" ]
+    },
+    {
       "name": "Super Metroid",
       "address": [ "F5008B" ]
     },
@@ -17,15 +37,7 @@
       "address": [ "F500F2", "F500F0" ]
     },
     {
-      "name": "Demons Blazon",
-      "address": [ "F50090", "F50093" ]
-    },
-    {
-      "name": "CV 4/Dracula X",
-      "address": [ "F50020" ]
-    },
-    {
-      "name": "Yoshi's Island'",
+      "name": "Yoshi's Island",
       "address": [ "F50035" ]
     }
   ]
