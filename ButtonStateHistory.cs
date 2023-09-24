@@ -9,12 +9,13 @@ namespace InputVisualizer
 {
     public class ButtonStateHistory
     {
-        public List<ButtonStateValue> StateChangeHistory { get; private set; } = new List<ButtonStateValue>();
+        private List<ButtonStateValue> StateChangeHistory { get; set; } = new List<ButtonStateValue>();
         public Color Color { get; set; }
         private object _modifyLock = new object();
         public ButtonMappingType MappingType { get; set; }
         public ButtonType UnmappedButtonType { get; set; }
         public Keys MappedKey { get; set; }
+        public int StateChangeCount { get; private set; }
         
         public void AddStateChange(bool state, DateTime time)
         {
@@ -27,6 +28,7 @@ namespace InputVisualizer
                     last.Completed = true;
                 }
                 StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
+                StateChangeCount++;
             }
         }
 
@@ -49,6 +51,7 @@ namespace InputVisualizer
                 foreach (var item in removeItems)
                 {
                     StateChangeHistory.Remove(item);
+                    StateChangeCount--;
                 }
             }
         }
@@ -103,6 +106,14 @@ namespace InputVisualizer
                     }
                 }
                 return frequency;
+            }
+        }
+
+        public ButtonStateValue[] GetCurrentStateHistory()
+        {
+            lock (_modifyLock)
+            {
+                return StateChangeHistory.ToArray();
             }
         }
     }

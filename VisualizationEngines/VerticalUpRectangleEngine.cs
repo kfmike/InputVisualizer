@@ -25,14 +25,16 @@ namespace InputVisualizer.Layouts
                 _onRects[kvp.Key].Clear();
                 var info = kvp.Value;
 
-                for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
+                var changes = info.GetCurrentStateHistory();
+
+                for (var i = changes.Length - 1; i >= 0; i--)
                 {
-                    if (!info.StateChangeHistory[i].IsPressed)
+                    if (!changes[i].IsPressed)
                     {
                         continue;
                     }
 
-                    var endTime = info.StateChangeHistory[i].EndTime == DateTime.MinValue ? lineStart : info.StateChangeHistory[i].EndTime;
+                    var endTime = changes[i].EndTime == DateTime.MinValue ? lineStart : changes[i].EndTime;
 
                     if (endTime < gameState.MinAge)
                     {
@@ -40,7 +42,7 @@ namespace InputVisualizer.Layouts
                     }
 
                     var xOffset = (lineStart - endTime).TotalMilliseconds * gameState.PixelsPerMs;
-                    var startTime = info.StateChangeHistory[i].StartTime < gameState.MinAge ? gameState.MinAge : info.StateChangeHistory[i].StartTime;
+                    var startTime = changes[i].StartTime < gameState.MinAge ? gameState.MinAge : changes[i].StartTime;
                     var lengthInMs = (endTime - startTime).TotalMilliseconds;
                     var lengthInPixels = (lengthInMs * gameState.PixelsPerMs);
                     if (lengthInPixels < 1)
@@ -88,7 +90,7 @@ namespace InputVisualizer.Layouts
                 var dimLine = false;
                 if (dimSpeed != MAX_DIM_DELAY && !_onRects[kvp.Key].Any())
                 {
-                    dimLine = config.DisplayConfig.TurnOffLineSpeed == MIN_DIM_DELAY || !kvp.Value.StateChangeHistory.Any();
+                    dimLine = config.DisplayConfig.TurnOffLineSpeed == MIN_DIM_DELAY || kvp.Value.StateChangeCount < 1;
                 }
 
                 var semiTransFactor = !dimLine ? 1.0f : 0.3f;
