@@ -32,7 +32,8 @@ namespace InputVisualizer
         private Usb2SnesClient _usb2snesClient;
 
         private HorizontalRectangleEngine _horizontalRectangleLayout = new HorizontalRectangleEngine();
-        private VerticalRectangleEngine _verticalRectangleLayout = new VerticalRectangleEngine();
+        private VerticalDownRectangleEngine _verticalDownRectangleLayout = new VerticalDownRectangleEngine();
+        private VerticalUpRectangleEngine _verticalUpRectangleLayout = new VerticalUpRectangleEngine();
         private Dictionary<string, SystemGamePadInfo> _systemGamePads = new Dictionary<string, SystemGamePadInfo>();
 
         private const int DEFAULT_SCREEN_WIDTH = 1024;
@@ -243,9 +244,14 @@ namespace InputVisualizer
                         _gameState.CurrentLayout = _horizontalRectangleLayout;
                         break;
                     }
-                case DisplayLayoutStyle.Vertical:
+                case DisplayLayoutStyle.VerticalDown:
                     {
-                        _gameState.CurrentLayout = _verticalRectangleLayout;
+                        _gameState.CurrentLayout = _verticalDownRectangleLayout;
+                        break;
+                    }
+                case DisplayLayoutStyle.VerticalUp:
+                    {
+                        _gameState.CurrentLayout = _verticalUpRectangleLayout;
                         break;
                     }
             }

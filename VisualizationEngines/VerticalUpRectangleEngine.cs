@@ -8,11 +8,11 @@ using System.Linq;
 
 namespace InputVisualizer.Layouts
 {
-    public class HorizontalRectangleEngine : VisualizerEngine
+    public class VerticalUpRectangleEngine : VisualizerEngine
     {
         private const int ROW_HEIGHT = 17;
         private const int RECT_OFFSET = 2;
-        private int RECT_HEIGHT = RECT_OFFSET * 2 + 1;
+        private int RECT_WIDTH = RECT_OFFSET * 2 + 1;
 
         private Dictionary<string, List<Rectangle>> _onRects = new Dictionary<string, List<Rectangle>>();
 
@@ -27,17 +27,17 @@ namespace InputVisualizer.Layouts
 
         public override void Update(ViewerConfig config, GameState gameState, GameTime gameTime)
         {
-            var yPos = 52;
-            var yInc = ROW_HEIGHT;
+            var xPos = 18;
+            var xInc = ROW_HEIGHT;
             var lineLength = config.DisplayConfig.LineLength;
             var lineStart = DateTime.Now;
-            var baseX = 41;
+            var baseY = 73 + lineLength + ROW_HEIGHT;
 
             foreach (var kvp in gameState.ButtonStates)
             {
                 _onRects[kvp.Key].Clear();
                 var info = kvp.Value;
-                
+
                 for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
                 {
                     if (!info.StateChangeHistory[i].IsPressed)
@@ -61,40 +61,37 @@ namespace InputVisualizer.Layouts
                         lengthInPixels = 1;
                     }
 
-                    var x = baseX + Math.Floor(xOffset);
-                    var width = lengthInPixels;
-                    var maxX = baseX + lineLength;
+                    var y = baseY - Math.Floor(xOffset);
+                    var height = lengthInPixels;
+                    var minY = baseY - lineLength;
 
-                    if (x + width >= maxX)
+                    if (y - height <= minY)
                     {
-                        var overflow = (x + width) - maxX;
-                        width -= overflow;
+                        var overflow = (y - height) - minY;
+                        height -= overflow + 1;
                     }
 
                     var rec = new Rectangle();
-                    rec.X = (int)Math.Floor(x);
-                    rec.Y = yPos - 2 - RECT_OFFSET - 1;
-                    rec.Width = (int)Math.Floor(width);
-                    rec.Height = RECT_HEIGHT;
+                    rec.Y = (int)Math.Floor(y - height - 55);
+                    rec.X = xPos - 2 - RECT_OFFSET - 1;
+                    rec.Height = (int)Math.Floor(height);
+                    rec.Width = RECT_WIDTH;
                     _onRects[kvp.Key].Add(rec);
                 }
-                yPos += yInc;
+                xPos += xInc;
             }
         }
 
         public override void Draw(SpriteBatch spriteBatch, ViewerConfig config, GameState gameState, GameTime gameTime, CommonTextures commonTextures)
         {
-            var baseX = 41;
-            var yPos = 52;
-            var yInc = ROW_HEIGHT;
-            var rightMargin = 10;
-           
             var lineLength = config.DisplayConfig.LineLength;
-            var infoX = baseX + lineLength + 5;
+            var baseY = 35 + lineLength;
+            var xInc = ROW_HEIGHT;
+            var xPos = 10;
 
-            var squareOuterRect = new Rectangle(28, 0, 13, 13);
-            var squareInnerRect = new Rectangle(29, 0, 11, 11);
-            var offLineRect = new Rectangle(baseX, 0, config.DisplayConfig.LineLength - 1, 1);
+            var squareOuterRect = new Rectangle(0, baseY - 1, 13, 13);
+            var squareInnerRect = new Rectangle(0, baseY, 11, 11);
+            var offLineRect = new Rectangle(0, 35, 1, lineLength - 1);
 
             foreach (var kvp in gameState.ButtonStates)
             {
@@ -106,17 +103,17 @@ namespace InputVisualizer.Layouts
                 var bType = kvp.Value.UnmappedButtonType.ToString();
                 if (commonTextures.ButtonImages.ContainsKey(bType) && commonTextures.ButtonImages[bType] != null)
                 {
-                    spriteBatch.Draw(commonTextures.ButtonImages[bType], new Vector2(rightMargin, yPos - 10), kvp.Value.Color);
+                    spriteBatch.Draw(commonTextures.ButtonImages[bType], new Vector2(xPos - 2, baseY + 22), kvp.Value.Color);
                 }
 
-                squareOuterRect.Y = yPos - 9;
-                squareInnerRect.Y = yPos - 8;
+                squareOuterRect.X = xPos - 1;
+                squareInnerRect.X = xPos;
                 spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * semiTransFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
                 spriteBatch.Draw(commonTextures.Pixel, squareInnerRect, null, Color.Black * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
 
                 if (config.DisplayConfig.DrawIdleLines)
                 {
-                    offLineRect.Y = yPos - 3;
+                    offLineRect.X = xPos + 5;
                     spriteBatch.Draw(commonTextures.Pixel, offLineRect, null, info.Color * semiTransFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
                 }
 
@@ -128,25 +125,17 @@ namespace InputVisualizer.Layouts
                 if (info.IsPressed())
                 {
                     spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-
-                    if (config.DisplayConfig.DisplayDuration)
-                    {
-                        var elapsed = info.PressedElapsed();
-                        if (elapsed.TotalSeconds > config.DisplayConfig.MinDisplayDuration)
-                        {
-                            spriteBatch.DrawString(commonTextures.Font18, elapsed.ToString("ss':'f"), new Vector2(infoX, yPos - 11), info.Color);
-                        }
-                    }
                 }
 
                 if (config.DisplayConfig.DisplayFrequency)
                 {
                     if (gameState.FrequencyDict[kvp.Key] >= config.DisplayConfig.MinDisplayFrequency)
                     {
-                        spriteBatch.DrawString(commonTextures.Font18, $"x{gameState.FrequencyDict[kvp.Key]}", new Vector2(infoX, yPos - 11), info.Color);
+                        spriteBatch.DrawString(commonTextures.Font18, $"x{gameState.FrequencyDict[kvp.Key]}", new Vector2(xPos - 3, 15), info.Color);
                     }
                 }
-                yPos += yInc;
+
+                xPos += xInc;
             }
         }
     }

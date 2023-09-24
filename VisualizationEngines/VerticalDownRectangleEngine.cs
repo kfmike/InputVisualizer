@@ -1,4 +1,5 @@
-﻿using InputVisualizer.Config;
+﻿using FontStashSharp;
+using InputVisualizer.Config;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -7,7 +8,7 @@ using System.Linq;
 
 namespace InputVisualizer.Layouts
 {
-    public class VerticalRectangleEngine : VisualizerEngine
+    public class VerticalDownRectangleEngine : VisualizerEngine
     {
         private const int ROW_HEIGHT = 17;
         private const int RECT_OFFSET = 2;
@@ -30,13 +31,13 @@ namespace InputVisualizer.Layouts
             var xInc = ROW_HEIGHT;
             var lineLength = config.DisplayConfig.LineLength;
             var lineStart = DateTime.Now;
+            var baseY = 73;
 
             foreach (var kvp in gameState.ButtonStates)
             {
                 _onRects[kvp.Key].Clear();
                 var info = kvp.Value;
-                var baseY = 73;
-
+                
                 for (var i = info.StateChangeHistory.Count - 1; i >= 0; i--)
                 {
                     if (!info.StateChangeHistory[i].IsPressed)
@@ -87,9 +88,10 @@ namespace InputVisualizer.Layouts
             var xInc = ROW_HEIGHT;
             var xPos = 10;
 
+            var lineLength = config.DisplayConfig.LineLength;
             var squareOuterRect = new Rectangle(0, baseY + 25, 13, 13);
             var squareInnerRect = new Rectangle(0, baseY + 26, 11, 11);
-            var offLineRect = new Rectangle(0, baseY + 38, 1, config.DisplayConfig.LineLength - 1);
+            var offLineRect = new Rectangle(0, baseY + 38, 1, lineLength - 1);
 
             foreach (var kvp in gameState.ButtonStates)
             {
@@ -123,6 +125,14 @@ namespace InputVisualizer.Layouts
                 if (info.IsPressed())
                 {
                     spriteBatch.Draw(commonTextures.Pixel, squareOuterRect, null, info.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                }
+
+                if (config.DisplayConfig.DisplayFrequency)
+                {
+                    if (gameState.FrequencyDict[kvp.Key] >= config.DisplayConfig.MinDisplayFrequency)
+                    {
+                        spriteBatch.DrawString(commonTextures.Font18, $"x{gameState.FrequencyDict[kvp.Key]}", new Vector2(xPos - 3, baseY + 38 + lineLength), info.Color);
+                    }
                 }
 
                 xPos += xInc;

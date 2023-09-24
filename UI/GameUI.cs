@@ -919,7 +919,7 @@ namespace InputVisualizer.UI
             var layoutCombo = CreateComboBox(9, 1, 1, 1);
             foreach (DisplayLayoutStyle value in Enum.GetValues(typeof(DisplayLayoutStyle)))
             {
-                var item = new ListItem(value.ToString(), Color.White, value);
+                var item = new ListItem(value.GetDescription(), Color.White, value);
                 layoutCombo.Items.Add(item);
                 if (_config.DisplayConfig.Layout == value)
                 {
