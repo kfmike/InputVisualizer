@@ -1,29 +1,16 @@
 ﻿using FontStashSharp;
 using InputVisualizer.Config;
+using InputVisualizer.VisualizationEngines;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace InputVisualizer.Layouts
 {
-    public class VerticalUpRectangleEngine : VisualizerEngine
+    public class VerticalUpRectangleEngine : RectangleEngine
     {
-        private const int ROW_HEIGHT = 17;
-        private const int RECT_OFFSET = 2;
         private int RECT_WIDTH = RECT_OFFSET * 2 + 1;
-
-        private Dictionary<string, List<Rectangle>> _onRects = new Dictionary<string, List<Rectangle>>();
-
-        public override void Clear(GameState gameState)
-        {
-            _onRects.Clear();
-            foreach (var button in gameState.ButtonStates)
-            {
-                _onRects.Add(button.Key, new List<Rectangle>());
-            }
-        }
 
         public override void Update(ViewerConfig config, GameState gameState, GameTime gameTime)
         {
@@ -92,13 +79,20 @@ namespace InputVisualizer.Layouts
             var squareOuterRect = new Rectangle(0, baseY - 1, 13, 13);
             var squareInnerRect = new Rectangle(0, baseY, 11, 11);
             var offLineRect = new Rectangle(0, 35, 1, lineLength - 1);
+            var dimSpeed = config.DisplayConfig.TurnOffLineSpeed;
 
             foreach (var kvp in gameState.ButtonStates)
             {
                 var info = kvp.Value;
-                var hasActiveObjects = kvp.Value.StateChangeHistory.Any();
-                var semiTransFactor = hasActiveObjects ? 1.0f : 0.3f;
-                var innerBoxSemiTransFactor = hasActiveObjects ? 0.75f : 0.25f;
+
+                var dimLine = false;
+                if (dimSpeed != MAX_DIM_DELAY && !_onRects[kvp.Key].Any())
+                {
+                    dimLine = config.DisplayConfig.TurnOffLineSpeed == MIN_DIM_DELAY || !kvp.Value.StateChangeHistory.Any();
+                }
+
+                var semiTransFactor = !dimLine ? 1.0f : 0.3f;
+                var innerBoxSemiTransFactor = !dimLine ? 0.75f : 0.25f;
 
                 var bType = kvp.Value.UnmappedButtonType.ToString();
                 if (commonTextures.ButtonImages.ContainsKey(bType) && commonTextures.ButtonImages[bType] != null)
