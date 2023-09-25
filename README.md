@@ -16,7 +16,7 @@ Useful for speedrunners and streamers alike.
 
 # OBS Settings
 
-Add InputVisualizer as a "Game Input" source.
+Add InputVisualizer as a "Game Capture" source.
 
 **Transparent Background**
 - Check "Allow Transparency" in the game input source properties.
