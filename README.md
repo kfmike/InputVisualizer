@@ -34,6 +34,7 @@ https://github.com/kfmike/InputVisualizer/blob/master/usb2snesGameList.json
 # Contributing to InputVisualizer
 
 I'm not accepting any pull requests from outside sources at this time.
+
 I don't have time to properly manage reviewing contributions, and simply want to maintain and grow this project on my own.
 
 Please feel free to submit issues and bug reports if you come across something that should be added or needs fixing.
