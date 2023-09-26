@@ -36,6 +36,13 @@ This is a fun personal project for me, so I initially added features for what I 
 I will do my best to listen to feedback and continue to add new stuff, but it might take time.
 I appreciate your patience and support!
 
+# Contributing to InputVisualizer
+
+I'm not accepting any pull requests from outside sources at this time.
+I don't have time to properly manage reviewing contributions, and simply want to maintain and grow this project on my own.
+
+Please feel free to create Issues for features you'd like to see, and bug reports if you come across something that needs fixing.
+
 # Credits
 
 Game framework and UI libraries: 
@@ -45,6 +52,7 @@ Game framework and UI libraries:
 RetroSpy signal reader code:
   - https://retro-spy.com/
   - https://github.com/retrospy/RetroSpy
+
 
 
 
