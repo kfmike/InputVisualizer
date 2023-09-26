@@ -41,7 +41,11 @@ I appreciate your patience and support!
 I'm not accepting any pull requests from outside sources at this time.
 I don't have time to properly manage reviewing contributions, and simply want to maintain and grow this project on my own.
 
-Please feel free to create Issues for features you'd like to see, and bug reports if you come across something that needs fixing.
+Please feel free to submit issues and bug reports if you come across something that should be added or needs fixing.
+
+This is a fun personal project for me, so I initially added features for what I do most often.
+I will do my best to listen to feedback and continue to add new stuff, but it might take time.
+I appreciate your patience and support!
 
 # Credits
 
