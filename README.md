@@ -31,11 +31,6 @@ You can update InputVisualizer with the current list by replacing the usb2snesGa
 
 https://github.com/kfmike/InputVisualizer/blob/master/usb2snesGameList.json
 
-# Disclaimer
-This is a fun personal project for me, so I initially added features for what I do most often.
-I will do my best to listen to feedback and continue to add new stuff, but it might take time.
-I appreciate your patience and support!
-
 # Contributing to InputVisualizer
 
 I'm not accepting any pull requests from outside sources at this time.
