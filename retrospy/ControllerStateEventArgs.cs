@@ -1,4 +1,7 @@
-﻿
+﻿/*  
+    Copyright (c) RetroSpy Technologies
+*/
+
 using System;
 using System.Collections.Generic;
 

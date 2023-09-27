@@ -332,10 +332,20 @@ namespace InputVisualizer
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
                                 break;
                             }
-                        case RetroSpyControllerType.GENESIS:
+                        case RetroSpyControllerType.Genesis:
                             {
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
                                 break;
+                            }
+                        case RetroSpyControllerType.Playstation:
+                            {
+                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Playstation2.ReadFromPacket);
+                                break;
+                            }
+                        default:
+                            {
+                                _ui.ShowMessage("RetroSpy Error", "Invalid controller type selected");
+                                return;
                             }
                     }
 
@@ -421,7 +431,7 @@ namespace InputVisualizer
             {
                 case InputMode.RetroSpy:
                     {
-                        InitRetroSpyNESButtons();
+                        InitRetroSpyButtons();
                         break;
                     }
                 case InputMode.Gamepad:
@@ -445,36 +455,42 @@ namespace InputVisualizer
             }
         }
 
-        private void InitRetroSpyNESButtons()
+        private void InitRetroSpyButtons()
         {
             _gameState.ButtonStates.Clear();
 
+            List<ButtonMapping> buttonMappings = null;
             switch (_config.RetroSpyConfig.ControllerType)
             {
                 case RetroSpyControllerType.NES:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.NES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
-                        }
+                        buttonMappings = _config.RetroSpyConfig.NES.ButtonMappings;
                         break;
                     }
                 case RetroSpyControllerType.SNES:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.SNES.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
-                        }
+                        buttonMappings = _config.RetroSpyConfig.SNES.ButtonMappings;
                         break;
                     }
-                case RetroSpyControllerType.GENESIS:
+                case RetroSpyControllerType.Genesis:
                     {
-                        foreach (var mapping in _config.RetroSpyConfig.GENESIS.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
-                        {
-                            _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
-                        }
+                        buttonMappings = _config.RetroSpyConfig.Genesis.ButtonMappings;
                         break;
                     }
+                case RetroSpyControllerType.Playstation:
+                    {
+                        buttonMappings = _config.RetroSpyConfig.Playstation.ButtonMappings;
+                        break;
+                    }
+            }
+
+            if (buttonMappings == null)
+            {
+                return;
+            }
+            foreach (var mapping in buttonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+            {
+                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
             }
         }
 
