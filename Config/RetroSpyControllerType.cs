@@ -1,10 +1,15 @@
 ﻿
+using System.ComponentModel;
+
 namespace InputVisualizer.Config
 {
     public enum RetroSpyControllerType
     {
         NES,
         SNES,
-        GENESIS
+        [Description("Genesis")]
+        Genesis,
+        [Description("Playstation 1/2")]
+        Playstation
     }
 }

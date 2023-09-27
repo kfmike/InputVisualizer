@@ -500,10 +500,11 @@ namespace InputVisualizer.UI
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var comPortLabel = CreateLabel("COM Port:", 0, 0, 1, 2);
+            var comPortLabel = CreateLabel("COM Port:", 0, 0, 1, 1);
             grid.Widgets.Add(comPortLabel);
 
-            var comPortCombo = CreateComboBox(0, 2, 1, 2);
+            var comPortCombo = CreateComboBox(0, 1, 1, 4);
+            comPortCombo.HorizontalAlignment = HorizontalAlignment.Right;
             foreach (var name in SerialPort.GetPortNames())
             {
                 var item = new ListItem(name, Color.White, name);
@@ -515,13 +516,14 @@ namespace InputVisualizer.UI
             }
             grid.Widgets.Add(comPortCombo);
 
-            var styleLabel = CreateLabel("Style:", 1, 0, 1, 2);
+            var styleLabel = CreateLabel("Style:", 1, 0, 1, 1);
             grid.Widgets.Add(styleLabel);
 
-            var styleCombo = CreateComboBox(1, 2, 1, 2);
+            var styleCombo = CreateComboBox(1, 1, 1, 4);
+            styleCombo.HorizontalAlignment = HorizontalAlignment.Right;
             foreach (RetroSpyControllerType value in Enum.GetValues(typeof(RetroSpyControllerType)))
             {
-                var item = new ListItem(value.ToString(), Color.White, value);
+                var item = new ListItem(value.GetDescription(), Color.White, value);
                 styleCombo.Items.Add(item);
                 if (_config.RetroSpyConfig.ControllerType == value)
                 {

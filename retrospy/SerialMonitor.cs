@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*  
+    Copyright (c) RetroSpy Technologies
+*/
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;

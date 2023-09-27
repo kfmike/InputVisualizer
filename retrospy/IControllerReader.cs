@@ -1,4 +1,7 @@
-﻿
+﻿/*  
+    Copyright (c) RetroSpy Technologies
+*/
+
 using System;
 
 namespace InputVisualizer.retrospy
