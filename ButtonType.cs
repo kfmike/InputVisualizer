@@ -21,6 +21,14 @@ namespace InputVisualizer
         MODE,
         D,
         LT,
-        RT
+        RT,
+        CROSS,
+        CIRCLE,
+        SQUARE,
+        TRIANGLE,
+        L1,
+        L2,
+        R1,
+        R2
     }
 }
