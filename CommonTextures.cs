@@ -37,6 +37,14 @@ namespace InputVisualizer
             ButtonImages.Add(ButtonType.LT.ToString(), content.Load<Texture2D>("lt_button"));
             ButtonImages.Add(ButtonType.RT.ToString(), content.Load<Texture2D>("rt_button"));
             ButtonImages.Add(ButtonType.MODE.ToString(), content.Load<Texture2D>("mode_button"));
+            ButtonImages.Add(ButtonType.CROSS.ToString(), content.Load<Texture2D>("cross_button"));
+            ButtonImages.Add(ButtonType.CIRCLE.ToString(), content.Load<Texture2D>("circle_button"));
+            ButtonImages.Add(ButtonType.TRIANGLE.ToString(), content.Load<Texture2D>("triangle_button"));
+            ButtonImages.Add(ButtonType.SQUARE.ToString(), content.Load<Texture2D>("square_button"));
+            ButtonImages.Add(ButtonType.L1.ToString(), content.Load<Texture2D>("l1_button"));
+            ButtonImages.Add(ButtonType.L2.ToString(), content.Load<Texture2D>("l2_button"));
+            ButtonImages.Add(ButtonType.R1.ToString(), content.Load<Texture2D>("r1_button"));
+            ButtonImages.Add(ButtonType.R2.ToString(), content.Load<Texture2D>("r2_button"));
 
             FontSystem = new FontSystem();
             FontSystem.AddFont(File.ReadAllBytes(@"Fonts\DroidSans.ttf"));

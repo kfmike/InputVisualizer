@@ -68,7 +68,21 @@ namespace InputVisualizer.Config
                         ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
                         break;
                     }
-                case GamepadStyle.Arcade:
+                case GamepadStyle.Playstation:
+                    {
+                        ButtonMappingSet.AddButton(ButtonType.CROSS, ButtonType.CROSS, Color.CornflowerBlue);
+                        ButtonMappingSet.AddButton(ButtonType.CIRCLE, ButtonType.CIRCLE, Color.IndianRed);
+                        ButtonMappingSet.AddButton(ButtonType.SQUARE, ButtonType.SQUARE, Color.Pink);
+                        ButtonMappingSet.AddButton(ButtonType.TRIANGLE, ButtonType.TRIANGLE, Color.Teal);
+                        ButtonMappingSet.AddButton(ButtonType.L1, ButtonType.L1, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.R1, ButtonType.R1, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.L2, ButtonType.L2, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.R2, ButtonType.R2, Color.Silver);
+                        ButtonMappingSet.AddButton(ButtonType.SELECT, ButtonType.SELECT, Color.PowderBlue);
+                        ButtonMappingSet.AddButton(ButtonType.START, ButtonType.START, Color.PowderBlue);
+                        break;
+                    }
+                case GamepadStyle.NeoGeo:
                     {
                         ButtonMappingSet.AddButton(ButtonType.A, ButtonType.A, Color.DarkRed);
                         ButtonMappingSet.AddButton(ButtonType.B, ButtonType.X, Color.Gold);

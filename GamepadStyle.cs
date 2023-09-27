@@ -1,12 +1,16 @@
 ﻿
+using System.ComponentModel;
+
 namespace InputVisualizer
 {
     public enum GamepadStyle
     {
         XBOX = 0,
         NES = 1,
-        Arcade = 2,
+        [Description("Neo Geo")]
+        NeoGeo = 2,
         SNES = 3,
-        Genesis = 4
+        Genesis = 4,
+        Playstation = 5
     }
 }

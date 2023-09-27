@@ -223,6 +223,7 @@ namespace InputVisualizer.UI
             var keyDetected = Keys.None;
             var buttonDetected = ButtonType.NONE;
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
+            var activeConfig = _gameState.ActiveGamepadConfig;
 
             var pressedKeys = keyboardState.GetPressedKeys();
             if (pressedKeys.Length > 0)
@@ -230,9 +231,9 @@ namespace InputVisualizer.UI
                 keyDetected = pressedKeys[0];
             }
 
-            if (keyDetected == Keys.None && !_gameState.ActiveGamepadConfig.IsKeyboard)
+            if (keyDetected == Keys.None && !activeConfig.IsKeyboard)
             {
-                if (_gameState.ActiveGamepadConfig.UseLStickForDpad)
+                if (activeConfig.UseLStickForDpad)
                 {
                     var result = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
                     buttonDetected = result.LeftRight != ButtonType.NONE ? result.LeftRight : result.UpDown;
@@ -261,35 +262,35 @@ namespace InputVisualizer.UI
                 {
                     if (state.Buttons.A == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.A;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.CROSS : ButtonType.A;
                     }
                     else if (state.Buttons.B == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.B;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.CIRCLE : ButtonType.B;
                     }
                     else if (state.Buttons.X == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.X;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.SQUARE : ButtonType.X;
                     }
                     else if (state.Buttons.Y == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.Y;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.TRIANGLE : ButtonType.Y;
                     }
                     else if (state.Buttons.LeftShoulder == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.L;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.L1 : ButtonType.L;
                     }
                     else if (state.Buttons.RightShoulder == ButtonState.Pressed)
                     {
-                        buttonDetected = ButtonType.R;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.R1 : ButtonType.R;
                     }
                     else if (state.Triggers.Left > 0.0f)
                     {
-                        buttonDetected = ButtonType.LT;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.L2 : ButtonType.LT;
                     }
                     else if (state.Triggers.Right > 0.0f)
                     {
-                        buttonDetected = ButtonType.RT;
+                        buttonDetected = activeConfig.Style == GamepadStyle.Playstation ? ButtonType.R2 : ButtonType.RT;
                     }
                     else if (state.Buttons.Back == ButtonState.Pressed)
                     {
@@ -311,7 +312,7 @@ namespace InputVisualizer.UI
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                 _listeningButton.Text = buttonText;
 
-                foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
+                foreach (var mapping in activeConfig.ButtonMappingSet.ButtonMappings)
                 {
                     if (mapping == _listeningMapping)
                     {
@@ -338,7 +339,7 @@ namespace InputVisualizer.UI
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                 _listeningButton.Text = buttonText;
 
-                foreach (var mapping in _gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings)
+                foreach (var mapping in activeConfig.ButtonMappingSet.ButtonMappings)
                 {
                     if (mapping == _listeningMapping)
                     {
@@ -391,10 +392,10 @@ namespace InputVisualizer.UI
             var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
             grid.Widgets.Add(styleLabel);
 
-            var styleCombo = CreateComboBox(0, 3, 1, 2);
+            var styleCombo = CreateComboBox(0, 3, 1, 3);
             foreach (GamepadStyle value in Enum.GetValues(typeof(GamepadStyle)))
             {
-                var item = new ListItem(value.ToString(), Color.White, value);
+                var item = new ListItem(value.GetDescription(), Color.White, value);
                 styleCombo.Items.Add(item);
                 if (_gameState.ActiveGamepadConfig.Style == value)
                 {

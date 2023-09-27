@@ -697,41 +697,49 @@ namespace InputVisualizer
                             break;
                         }
                     case "A":
+                    case "CROSS":
                         {
                             pressed = state.Buttons.A == ButtonState.Pressed;
                             break;
                         }
                     case "B":
+                    case "CIRCLE":
                         {
                             pressed = state.Buttons.B == ButtonState.Pressed;
                             break;
                         }
                     case "X":
+                    case "SQUARE":
                         {
                             pressed = state.Buttons.X == ButtonState.Pressed;
                             break;
                         }
                     case "Y":
+                    case "TRIANGLE":
                         {
                             pressed = state.Buttons.Y == ButtonState.Pressed;
                             break;
                         }
                     case "L":
+                    case "L1":
                         {
                             pressed = state.Buttons.LeftShoulder == ButtonState.Pressed;
                             break;
                         }
                     case "R":
+                    case "R1":
                         {
                             pressed = state.Buttons.RightShoulder == ButtonState.Pressed;
                             break;
                         }
                     case "LT":
+                    case "L2":
                         {
                             pressed = state.Triggers.Left > 0.0f;
                             break;
                         }
                     case "RT":
+                    case "R2":
                         {
                             pressed = state.Triggers.Right > 0.0f;
                             break;
