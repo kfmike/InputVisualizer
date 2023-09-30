@@ -45,6 +45,7 @@ namespace InputVisualizer
             ButtonImages.Add(ButtonType.L2.ToString(), content.Load<Texture2D>("l2_button"));
             ButtonImages.Add(ButtonType.R1.ToString(), content.Load<Texture2D>("r1_button"));
             ButtonImages.Add(ButtonType.R2.ToString(), content.Load<Texture2D>("r2_button"));
+            ButtonImages.Add(ButtonType.NONE.ToString(), content.Load<Texture2D>("empty_button"));
 
             FontSystem = new FontSystem();
             FontSystem.AddFont(File.ReadAllBytes(@"Fonts\DroidSans.ttf"));

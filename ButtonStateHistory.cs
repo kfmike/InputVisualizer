@@ -16,6 +16,7 @@ namespace InputVisualizer
         public ButtonType UnmappedButtonType { get; set; }
         public Keys MappedKey { get; set; }
         public int StateChangeCount { get; private set; }
+        public DateTime LastActiveCompletedTime { get; set; } = DateTime.MinValue;
         
         public void AddStateChange(bool state, DateTime time)
         {
@@ -26,6 +27,7 @@ namespace InputVisualizer
                     var last = StateChangeHistory.Last();
                     last.EndTime = time;
                     last.Completed = true;
+                    LastActiveCompletedTime = last.IsPressed ? DateTime.Now : DateTime.MinValue;
                 }
                 StateChangeHistory.Add(new ButtonStateValue { IsPressed = state, StartTime = time });
                 StateChangeCount++;

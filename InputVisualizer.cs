@@ -10,10 +10,11 @@ using System.Reflection;
 using System.Linq;
 using InputVisualizer.Config;
 using InputVisualizer.UI;
-using InputVisualizer.Layouts;
 using InputVisualizer.Hooks;
 using InputVisualizer.Usb2Snes;
 using System.Threading.Tasks;
+using InputVisualizer.RetroSpyStateHandlers;
+using InputVisualizer.VisualizationEngines;
 
 namespace InputVisualizer
 {
@@ -28,12 +29,11 @@ namespace InputVisualizer
         private GameState _gameState;
         private Matrix _matrix = Matrix.CreateScale(2f, 2f, 2f);
         private IControllerReader _serialReader;
+        private RetroSpyControllerHandler _retroSpyControllerHandler;
         private KeyboardHook _keyboardHook;
         private Usb2SnesClient _usb2snesClient;
 
-        private HorizontalRectangleEngine _horizontalRectangleLayout = new HorizontalRectangleEngine();
-        private VerticalDownRectangleEngine _verticalDownRectangleLayout = new VerticalDownRectangleEngine();
-        private VerticalUpRectangleEngine _verticalUpRectangleLayout = new VerticalUpRectangleEngine();
+        private RectangleEngine _rectangleEngine = new RectangleEngine();
         private Dictionary<string, SystemGamePadInfo> _systemGamePads = new Dictionary<string, SystemGamePadInfo>();
 
         private const int DEFAULT_SCREEN_WIDTH = 1024;
@@ -66,7 +66,7 @@ namespace InputVisualizer
             InitUI();
             SetCurrentLayout();
             InitInputSource().GetAwaiter().GetResult();
-            _gameState.ResetPurgeTimer(_config.DisplayConfig.TurnOffLineSpeed);
+            _gameState.ResetPurgeTimer(1.5f);
             base.Initialize();
         }
 
@@ -140,7 +140,6 @@ namespace InputVisualizer
         private void UI_DisplaySettingsUpdated(object sender, EventArgs e)
         {
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
-            _gameState.ResetPurgeTimer(_config.DisplayConfig.TurnOffLineSpeed);
             SetCurrentLayout();
             _config.Save();
         }
@@ -241,17 +240,23 @@ namespace InputVisualizer
             {
                 case DisplayLayoutStyle.Horizontal:
                     {
-                        _gameState.CurrentLayout = _horizontalRectangleLayout;
+                        _rectangleEngine.SetOrientation(RectangeOrientation.Right);
+                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
+                        _gameState.CurrentLayout = _rectangleEngine;
                         break;
                     }
                 case DisplayLayoutStyle.VerticalDown:
                     {
-                        _gameState.CurrentLayout = _verticalDownRectangleLayout;
+                        _rectangleEngine.SetOrientation(RectangeOrientation.Down);
+                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
+                        _gameState.CurrentLayout = _rectangleEngine;
                         break;
                     }
                 case DisplayLayoutStyle.VerticalUp:
                     {
-                        _gameState.CurrentLayout = _verticalUpRectangleLayout;
+                        _rectangleEngine.SetOrientation(RectangeOrientation.Up);
+                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
+                        _gameState.CurrentLayout = _rectangleEngine;
                         break;
                     }
             }
@@ -325,21 +330,25 @@ namespace InputVisualizer
                         case RetroSpyControllerType.NES:
                             {
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                                _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.SNES:
                             {
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
+                                _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.Genesis:
                             {
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
+                                _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.Playstation:
                             {
                                 _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Playstation2.ReadFromPacket);
+                                _retroSpyControllerHandler = new PlaystationHandler(_gameState);
                                 break;
                             }
                         default:
@@ -356,6 +365,11 @@ namespace InputVisualizer
                     _ui.ShowMessage("RetroSpy Error", ex.Message);
                 }
             }
+        }
+
+        private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
+        {
+            _retroSpyControllerHandler.ProcessControllerState(e);
         }
 
         private async Task InitUsb2SnesInputSource()
@@ -408,20 +422,6 @@ namespace InputVisualizer
             if (_gameState.ActiveGamepadConfig != null)
             {
                 _gameState.CurrentPlayerIndex = _systemGamePads[_gameState.ActiveGamepadConfig.Id].PlayerIndex;
-            }
-        }
-
-        private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
-        {
-            foreach (var button in e.Buttons)
-            {
-                if (_gameState.ButtonStates.ContainsKey(button.Key))
-                {
-                    if (_gameState.ButtonStates[button.Key].IsPressed() != button.Value)
-                    {
-                        _gameState.ButtonStates[button.Key].AddStateChange(button.Value, DateTime.Now);
-                    }
-                }
             }
         }
 

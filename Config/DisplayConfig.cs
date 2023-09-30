@@ -13,7 +13,8 @@ namespace InputVisualizer.Config
         public DisplayLayoutStyle Layout { get; set; } = DisplayLayoutStyle.Horizontal;
         public bool DrawIdleLines { get; set; } = true;
         public float Speed { get; set; } = 4;
-        public int LineLength { get; set; } = 200;
+        public int LineLength { get; set; } = 150;
         public float TurnOffLineSpeed { get; set; } = 200;
+        public int MaxContainers { get; set; } = 4;
     }
 }
