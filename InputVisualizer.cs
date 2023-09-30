@@ -236,30 +236,27 @@ namespace InputVisualizer
 
         private void SetCurrentLayout()
         {
+            _rectangleEngine.UpdateContainerSettings(_config.DisplayConfig.MaxContainers, _config.DisplayConfig.EmptyContainerColor);
             switch (_config.DisplayConfig.Layout)
             {
                 case DisplayLayoutStyle.Horizontal:
                     {
                         _rectangleEngine.SetOrientation(RectangeOrientation.Right);
-                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
-                        _gameState.CurrentLayout = _rectangleEngine;
+                        
                         break;
                     }
                 case DisplayLayoutStyle.VerticalDown:
                     {
                         _rectangleEngine.SetOrientation(RectangeOrientation.Down);
-                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
-                        _gameState.CurrentLayout = _rectangleEngine;
                         break;
                     }
                 case DisplayLayoutStyle.VerticalUp:
                     {
                         _rectangleEngine.SetOrientation(RectangeOrientation.Up);
-                        _rectangleEngine.SetMaxContainers(_config.DisplayConfig.MaxContainers);
-                        _gameState.CurrentLayout = _rectangleEngine;
                         break;
                     }
             }
+            _gameState.CurrentLayout = _rectangleEngine;
             _gameState.CurrentLayout.Clear(_gameState);
         }
 
