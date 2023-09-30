@@ -7,10 +7,11 @@ Useful for speedrunners and streamers alike.
 **Features**
 
 - PC gamepad and keyboard support with customizable input mapping
-- RetroSpy/NintendoSpy support for NES, SNES, and Sega Genesis consoles
+- RetroSpy/NintendoSpy support for NES, SNES, Sega Genesis, and Playstation 1/2 consoles
 - SD2SNES/FXPAK PRO support for SNES hardware using Usb2Snes/QUsb2Snes/SNI
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
+- Compact display view option to only show active buttons
 
 ![image](https://github.com/kfmike/InputVisualizer/assets/57804306/993da0c6-c26b-4080-b35a-cb3d063ad2dc)
 
@@ -21,6 +22,12 @@ Add InputVisualizer as a "Game Capture" source.
 **Transparent Background**
 - Check "Allow Transparency" in the game input source properties.
 - Set the InputVisualizer background color alpha value to zero (default)
+
+# Compact View
+By default, the visualizer will be in compact view, and only show a maximum # of lines. Buttons that are pressed but cannot appear on a line will be displayed below or next to the lines and flash to indicate activity.
+If a line opens up, they will move up into the lines and the entire line history will be available for that button.
+
+By selecting "All" in the display configuration for Max Lines, you will have the original functionality of prior versions.
 
 # SD2SNES/FXPAK PRO Game Support
 Please check the following document to see an incomplete list of games that are currently supported:
