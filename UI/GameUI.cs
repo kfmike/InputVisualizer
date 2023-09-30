@@ -38,7 +38,7 @@ namespace InputVisualizer.UI
         public event EventHandler DisplaySettingsUpdated;
         public event EventHandler<Usb2SnesGameChangedEventArgs> Usb2SnesGameChanged;
         public event EventHandler RefreshInputSources;
-        
+
         public GameUI(Game game, ViewerConfig config, GameState gameState)
         {
             MyraEnvironment.Game = game;
@@ -786,10 +786,12 @@ namespace InputVisualizer.UI
 
             var aboutLabels = new List<Label>
             {
-                CreateLabel("Author:", 0, 0, 1, 1),
-                CreateLabel("KungFusedMike", 0, 1, 1, 1),
-                CreateLabel("Email:", 1, 0, 1, 1),
-                CreateLabel("kungfusedmike@gmail.com", 1, 1, 1, 1)
+                CreateLabel("Version:", 0, 0, 1, 1),
+                CreateLabel("1.3", 0, 1, 1, 1),
+                CreateLabel("Author:", 1, 0, 1, 1),
+                CreateLabel("KungFusedMike", 1, 1, 1, 1),
+                CreateLabel("Email:", 2, 0, 1, 1),
+                CreateLabel("kungfusedmike@gmail.com", 2, 1, 1, 1)
             };
 
             foreach (var label in aboutLabels)
@@ -817,16 +819,21 @@ namespace InputVisualizer.UI
                 ColumnSpacing = 8,
                 Padding = new Thickness(3),
                 Margin = new Thickness(3),
-                HorizontalAlignment = HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Right
             };
 
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
-            var layoutLabel = CreateLabel("Layout:", 0, 0, 1, 1);
+            var layoutLabel = CreateLabel("Layout", 0, 0, 1, 1, Color.DarkSeaGreen);
             grid.Widgets.Add(layoutLabel);
 
-            var layoutCombo = CreateComboBox(0, 1, 1, 1);
+            var layoutStyle = CreateLabel("Style", 1, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(layoutStyle);
+            var layoutCombo = CreateComboBox(1, 2, 1, 1);
             foreach (DisplayLayoutStyle value in Enum.GetValues(typeof(DisplayLayoutStyle)))
             {
                 var item = new ListItem(value.GetDescription(), Color.White, value);
@@ -837,11 +844,9 @@ namespace InputVisualizer.UI
                 }
             }
             grid.Widgets.Add(layoutCombo);
-
-            var maxContainerLabel = CreateLabel("Max Lines (compact mode):", 1, 0, 1, 1);
+            var maxContainerLabel = CreateLabel("Max Lines", 2, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(maxContainerLabel);
-
-            var maxContainerCombo = CreateComboBox(1, 1, 1, 1);
+            var maxContainerCombo = CreateComboBox(2, 2, 1, 1);
             for (var i = 0; i < 10; i++)
             {
                 var item = new ListItem(i == 0 ? "All" : i.ToString(), Color.White, i);
@@ -853,42 +858,12 @@ namespace InputVisualizer.UI
             }
             grid.Widgets.Add(maxContainerCombo);
 
-            var lineLengthLabel = CreateLabel("Line Length:", 2, 0, 1, 1);
-            grid.Widgets.Add(lineLengthLabel);
+            var colorsLabel = CreateLabel("Colors", 3, 0, 1, 1, Color.DarkSeaGreen);
+            grid.Widgets.Add(colorsLabel);
 
-            var displayWidthText = CreateTextBox(_config.DisplayConfig.LineLength.ToString(), 2, 1, 1, 1);
-            displayWidthText.Width = 50;
-            grid.Widgets.Add(displayWidthText);
-
-            var speedLabel = CreateLabel("Speed:", 3, 0, 1, 1);
-            grid.Widgets.Add(speedLabel);
-
-            var displaySpeedSpin = new HorizontalSlider()
-            {
-                GridRow = 3,
-                GridColumn = 1,
-                Value = _config.DisplayConfig.Speed,
-                Minimum = 1,
-                Maximum = 11,
-                Width = 150
-            };
-            grid.Widgets.Add(displaySpeedSpin);
-
-            var showIdleLabel = CreateLabel("Show Idle Lines:", 4, 0, 1, 1);
-            grid.Widgets.Add(showIdleLabel);
-
-            var displayIdleLindesCheck = new CheckBox()
-            {
-                GridRow = 4,
-                GridColumn = 1,
-                IsChecked = _config.DisplayConfig.DrawIdleLines
-            };
-            grid.Widgets.Add(displayIdleLindesCheck);
-
-            var backgroundLabel = CreateLabel("Background:", 5, 0, 1, 1);
+            var backgroundLabel = CreateLabel("Background", 4, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(backgroundLabel);
-
-            var colorButton = CreateButton("Color", 5, 1, 1, 1);
+            var colorButton = CreateButton("Color", 4, 2, 1, 1);
             colorButton.TextColor = _config.DisplayConfig.BackgroundColor;
             colorButton.Click += (s, e) =>
             {
@@ -896,10 +871,10 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(colorButton);
 
-            var emptyContainerColorLabel = CreateLabel("Empty Container Color:", 6, 0, 1, 1);
+            var emptyContainerColorLabel = CreateLabel("Empty Container", 5, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(emptyContainerColorLabel);
 
-            var emptyContainerColorButton = CreateButton("Color", 6, 1, 1, 1);
+            var emptyContainerColorButton = CreateButton("Color", 5, 2, 1, 1);
             emptyContainerColorButton.TextColor = _config.DisplayConfig.EmptyContainerColor;
             emptyContainerColorButton.Click += (s, e) =>
             {
@@ -907,52 +882,98 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(emptyContainerColorButton);
 
-            var dimLineLabel = CreateLabel("Dim Line Delay:", 7, 0, 1, 1);
-            grid.Widgets.Add(dimLineLabel);
 
-            var turnOffLineSpeedSpin = new HorizontalSlider()
+            var linesLabel = CreateLabel("Lines", 6, 0, 1, 1, Color.DarkSeaGreen);
+            grid.Widgets.Add(linesLabel);
+
+            var showIdleLabel = CreateLabel("Idle Lines Enabled", 7, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(showIdleLabel);
+            var displayIdleLindesCheck = new CheckBox()
             {
                 GridRow = 7,
-                GridColumn = 1,
+                GridColumn = 2,
+                IsChecked = _config.DisplayConfig.DrawIdleLines
+            };
+            grid.Widgets.Add(displayIdleLindesCheck);
+
+            var lineLengthLabel = CreateLabel("Length", 8, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(lineLengthLabel);
+
+            var displayWidthText = CreateTextBox(_config.DisplayConfig.LineLength.ToString(), 8, 2, 1, 1);
+            displayWidthText.Width = 50;
+            grid.Widgets.Add(displayWidthText);
+
+            var speedLabel = CreateLabel("Speed", 9, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(speedLabel);
+            var speedMinValueLabel = CreateLabel("Slow", 9, 1, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(speedMinValueLabel);
+            var displaySpeedSpin = new HorizontalSlider()
+            {
+                GridRow = 9,
+                GridColumn = 2,
+                GridColumnSpan = 1,
+                Value = _config.DisplayConfig.Speed,
+                Minimum = 1,
+                Maximum = 11,
+                Width = 150
+            };
+            grid.Widgets.Add(displaySpeedSpin);
+            var speedMaxValueLabel = CreateLabel("Fast", 9, 3, 1, 1);
+            grid.Widgets.Add(speedMaxValueLabel);
+
+            var dimLineLabel = CreateLabel("Dim Speed", 10, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(dimLineLabel);
+
+            var dimLineLabelMinValueLabel = CreateLabel("Instant", 10, 1, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(dimLineLabelMinValueLabel);
+            var turnOffLineSpeedSpin = new HorizontalSlider()
+            {
+                GridRow = 10,
+                GridColumn = 2,
+                GridColumnSpan = 1,
                 Value = _config.DisplayConfig.TurnOffLineSpeed / 50.0f,
                 Minimum = 0,
                 Maximum = 100,
                 Width = 150
             };
             grid.Widgets.Add(turnOffLineSpeedSpin);
+            var dimLineLabelMaxValueLabel = CreateLabel("Never", 10, 3, 1, 1);
+            grid.Widgets.Add(dimLineLabelMaxValueLabel);
 
-            var minSecondsShowDurationLabel = CreateLabel("Show Duration Min Seconds:", 8, 0, 1, 1);
+            var metricsLabel = CreateLabel("Metrics", 11, 0, 1, 1, Color.DarkSeaGreen);
+            grid.Widgets.Add(metricsLabel);
+            var durationLabel = CreateLabel("Pressed Durations", 12, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(durationLabel);
+            var minSecondsShowDurationLabel = CreateLabel("Min", 12, 1, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(minSecondsShowDurationLabel);
-
-            var pressThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayDuration.ToString(), 8, 1, 1, 1);
+            var pressThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayDuration.ToString(), 12, 2, 1, 1);
             pressThresholdText.Width = 50;
             grid.Widgets.Add(pressThresholdText);
-
-            var minFrequencyLabel = CreateLabel("Show Frequency Min Value:", 9, 0, 1, 1);
-            grid.Widgets.Add(minFrequencyLabel);
-
-            var frequencyThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayFrequency.ToString(), 9, 1, 1, 1);
-            frequencyThresholdText.Width = 50;
-            grid.Widgets.Add(frequencyThresholdText);
-
-            var displayDurationLabel = CreateLabel("Display Durations:", 10, 0, 1, 1);
+            var displayDurationLabel = CreateLabel("Enabled", 12, 3, 1, 1);
             grid.Widgets.Add(displayDurationLabel);
 
             var displayDurationCheck = new CheckBox()
             {
-                GridRow = 10,
-                GridColumn = 1,
+                GridRow = 12,
+                GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayDuration,
             };
             grid.Widgets.Add(displayDurationCheck);
 
-            var displayFrequencyLabel = CreateLabel("Display Frequency Last Second:", 11, 0, 1, 1);
+            var mashLabel = CreateLabel("Mash Counts", 13, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(mashLabel);
+            var minMashLabel = CreateLabel("Min", 13, 1, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(minMashLabel);
+            var mashThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayFrequency.ToString(), 13, 2, 1, 1);
+            mashThresholdText.Width = 50;
+            grid.Widgets.Add(mashThresholdText);
+            var displayFrequencyLabel = CreateLabel("Enabled", 13, 3, 1, 1);
             grid.Widgets.Add(displayFrequencyLabel);
 
             var displayFrequencyCheck = new CheckBox()
             {
-                GridRow = 11,
-                GridColumn = 1,
+                GridRow = 13,
+                GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayFrequency,
             };
             grid.Widgets.Add(displayFrequencyCheck);
@@ -972,11 +993,11 @@ namespace InputVisualizer.UI
                 {
                     _config.DisplayConfig.MinDisplayDuration = pressThresholdSeconds < 1 ? 1 : pressThresholdSeconds;
                 }
-                if (int.TryParse(frequencyThresholdText.Text, out var frequencyThresholdValue))
+                if (int.TryParse(mashThresholdText.Text, out var frequencyThresholdValue))
                 {
                     _config.DisplayConfig.MinDisplayFrequency = frequencyThresholdValue < 1 ? 1 : frequencyThresholdValue;
                 }
-                if( int.TryParse(maxContainerCombo.SelectedItem.Tag.ToString(), out var maxContainers))
+                if (int.TryParse(maxContainerCombo.SelectedItem.Tag.ToString(), out var maxContainers))
                 {
                     _config.DisplayConfig.MaxContainers = maxContainers;
                 }
@@ -1013,7 +1034,7 @@ namespace InputVisualizer.UI
 
         public void HideWaitMessage()
         {
-            if( _waitMessageBox == null )
+            if (_waitMessageBox == null)
             {
                 return;
             }
@@ -1054,7 +1075,7 @@ namespace InputVisualizer.UI
             };
         }
 
-        private Label CreateLabel(string text, int gridRow, int gridCol, int rowSpan, int colSpan, Color? textColor = null)
+        private Label CreateLabel(string text, int gridRow, int gridCol, int rowSpan, int colSpan, Color? textColor = null, HorizontalAlignment alignment = HorizontalAlignment.Left)
         {
             var label = new Label()
             {
@@ -1063,6 +1084,7 @@ namespace InputVisualizer.UI
                 GridColumn = gridCol,
                 GridRowSpan = rowSpan,
                 GridColumnSpan = colSpan,
+                HorizontalAlignment = alignment
             };
             if (textColor != null)
             {
