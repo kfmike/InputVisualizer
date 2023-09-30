@@ -931,6 +931,21 @@ namespace InputVisualizer.UI
             }
             grid.Widgets.Add(layoutCombo);
 
+            var maxContainerLabel = CreateLabel("Max Lines:", 10, 0, 1, 1);
+            grid.Widgets.Add(maxContainerLabel);
+
+            var maxContainerCombo = CreateComboBox(10, 1, 1, 1);
+            for( var i = 0; i < 10; i++)
+            {
+                var item = new ListItem( i == 0 ? "All" : i.ToString(), Color.White, i);
+                maxContainerCombo.Items.Add(item);
+                if (_config.DisplayConfig.MaxContainers == i)
+                {
+                    maxContainerCombo.SelectedItem = item;
+                }
+            }
+            grid.Widgets.Add(maxContainerCombo);
+
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
             {
@@ -949,6 +964,10 @@ namespace InputVisualizer.UI
                 if (int.TryParse(frequencyThresholdText.Text, out var frequencyThresholdValue))
                 {
                     _config.DisplayConfig.MinDisplayFrequency = frequencyThresholdValue < 1 ? 1 : frequencyThresholdValue;
+                }
+                if( int.TryParse(maxContainerCombo.SelectedItem.Tag.ToString(), out var maxContainers))
+                {
+                    _config.DisplayConfig.MaxContainers = maxContainers;
                 }
                 _config.DisplayConfig.Speed = displaySpeedSpin.Value;
                 _config.DisplayConfig.TurnOffLineSpeed = turnOffLineSpeedSpin.Value * 50.0f;
