@@ -26,20 +26,19 @@ namespace InputVisualizer.VisualizationEngines
         private List<RectangleContainer> _emptyContainers = new List<RectangleContainer>();
         private List<RectangleContainer> _visibleContainers = new List<RectangleContainer>();
         private List<RectangleContainer> _visibleCompactButtons = new List<RectangleContainer>();
-        private ButtonStateHistory _emptyStateHistory = new ButtonStateHistory() { Color = Color.PapayaWhip };
 
         public void SetOrientation(RectangeOrientation orientation)
         {
             _orientation = orientation;
         }
 
-        public void SetMaxContainers(int maxContainers)
+        public void UpdateContainerSettings(int maxContainers, Color emptyContainercolor)
         {
             _maxContainers = maxContainers;
             _emptyContainers.Clear();
             for (var i = 0; i < _maxContainers; i++)
             {
-                var emptyContainer = new RectangleContainer { ButtonName = "NONE", UnmappedButtonName = "NONE", IsEmptyContainer = true };
+                var emptyContainer = new RectangleContainer { ButtonName = "NONE", UnmappedButtonName = "NONE", IsEmptyContainer = true, Color = emptyContainercolor };
                 _emptyContainers.Add(emptyContainer);
             }
             InitVisibleContainers();

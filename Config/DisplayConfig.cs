@@ -16,5 +16,6 @@ namespace InputVisualizer.Config
         public int LineLength { get; set; } = 150;
         public float TurnOffLineSpeed { get; set; } = 200;
         public int MaxContainers { get; set; } = 4;
+        public Color EmptyContainerColor { get; set; } = Color.PapayaWhip;
     }
 }
