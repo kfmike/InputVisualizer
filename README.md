@@ -8,6 +8,7 @@ Useful for speedrunners and streamers alike.
 
 - PC XInput gamepad and keyboard support with customizable input mapping
 - RetroSpy/NintendoSpy support for NES, SNES, Sega Genesis, and Playstation 1/2 consoles
+- RetroSpy MiSTer script support
 - SD2SNES/FXPAK PRO support for SNES hardware using Usb2Snes/QUsb2Snes/SNI
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
@@ -28,6 +29,9 @@ By default, the visualizer will be in compact view, and only show a maximum # of
 If a line opens up, they will move up into the lines and the entire line history will be available for that button.
 
 By selecting "All" in the display configuration for Max Lines, you will have the original functionality of prior versions.
+
+# RetroSpy MiSTer Script Support
+You can use this software to view inputs from a MiSTer FPGA by installing the [Retro-Spy MiSTer Script](https://retro-spy.com/wiki/setting-up-retrospy-for-the-mister/)
 
 # SD2SNES/FXPAK PRO Game Support
 Please check the following document to see an incomplete list of games that are currently supported:
