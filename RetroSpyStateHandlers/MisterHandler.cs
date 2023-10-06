@@ -2,9 +2,9 @@
 
 namespace InputVisualizer.RetroSpyStateHandlers
 {
-    public class PlaystationHandler : RetroSpyControllerHandler
+    public class MisterHandler : RetroSpyControllerHandler
     {
-        public PlaystationHandler( GameState gameState ) : base( gameState ) { }
+        public MisterHandler(GameState gameState) : base(gameState) { }
 
         public override void ProcessControllerState(ControllerStateEventArgs e)
         {

@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace InputVisualizer.retrospy
+namespace InputVisualizer.RetroSpy
 {
     internal static class SignalTool
     {

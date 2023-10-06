@@ -84,6 +84,7 @@ namespace InputVisualizer.Config
             }
             if( !Playstation.ButtonMappings.Any())
             {
+                Playstation = new RetrySpyButtonMappingSet() { ControllerType = RetroSpyControllerType.Playstation };
                 Playstation.AddButton(ButtonType.UP, ButtonType.UP, Color.WhiteSmoke);
                 Playstation.AddButton(ButtonType.DOWN, ButtonType.DOWN, Color.WhiteSmoke);
                 Playstation.AddButton(ButtonType.LEFT, ButtonType.LEFT, Color.WhiteSmoke);
