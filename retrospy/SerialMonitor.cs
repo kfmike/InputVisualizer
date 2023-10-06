@@ -8,7 +8,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Timers;
 
-namespace InputVisualizer.retrospy
+namespace InputVisualizer.RetroSpy
 {
     public class PacketDataEventArgs : EventArgs
     {
@@ -27,7 +27,6 @@ namespace InputVisualizer.retrospy
         private const int TIMER_MS = 1;
 
         public event EventHandler<PacketDataEventArgs>? PacketReceived;
-
         public event EventHandler? Disconnected;
 
         private SerialPort? _datPort;

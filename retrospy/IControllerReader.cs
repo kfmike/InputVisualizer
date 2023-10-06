@@ -4,14 +4,14 @@
 
 using System;
 
-namespace InputVisualizer.retrospy
+namespace InputVisualizer.RetroSpy
 {
     public interface IControllerReader
     {
         event EventHandler<ControllerStateEventArgs> ControllerStateChanged;
-
         event EventHandler ControllerDisconnected;
 
         void Finish();
+        void Start();
     }
 }

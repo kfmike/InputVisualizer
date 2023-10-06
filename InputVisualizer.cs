@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using InputVisualizer.retrospy;
+using InputVisualizer.RetroSpy;
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
@@ -28,7 +28,8 @@ namespace InputVisualizer
         private GameUI _ui;
         private GameState _gameState;
         private Matrix _matrix = Matrix.CreateScale(2f, 2f, 2f);
-        private IControllerReader _serialReader;
+        private IControllerReader _retroSpyControllerReader;
+        public ISSHControllerReader _misterControllerReader;
         private RetroSpyControllerHandler _retroSpyControllerHandler;
         private KeyboardHook _keyboardHook;
         private Usb2SnesClient _usb2snesClient;
@@ -87,6 +88,8 @@ namespace InputVisualizer
             _ui.Usb2SnesSettingsUpdated += UI_Usb2SnesSettingsUpdated;
             _ui.DisplaySettingsUpdated += UI_DisplaySettingsUpdated;
             _ui.Usb2SnesGameChanged += UI_Usb2SnesGameChanged;
+            _ui.MisterSettingsUpdated += UI_MisterSettingsUpdated;
+            _ui.MisterConnectionRequested += UI_MisterConnectionRequested;
             _ui.RefreshInputSources += UI_RefreshInputSources;
             _ui.Init(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
         }
@@ -135,6 +138,26 @@ namespace InputVisualizer
         {
             _config.Save();
             await InitInputSource();
+        }
+
+        private void UI_MisterSettingsUpdated(object sender, EventArgs e)
+        {
+            _config.Save();
+            InitButtons();
+        }
+
+        private void UI_MisterConnectionRequested(object sender, EventArgs e)
+        {
+            if (!_gameState.ConnectedToMister)
+            {
+                InitMisterInputSource();
+            }
+            else
+            {
+                CloseCurrentInputMode();
+                _ui.UpdateMisterConfigureInputUI();
+                _ui.UpdateMainMenu(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
+            }
         }
 
         private void UI_DisplaySettingsUpdated(object sender, EventArgs e)
@@ -231,6 +254,7 @@ namespace InputVisualizer
                 keyboardConfig.GenerateButtonMappings();
             }
             _config.RetroSpyConfig.GenerateButtonMappings();
+            _config.MisterConfig.GenerateButtonMappings();
             _config.Usb2SnesConfig.GenerateButtonMappings();
         }
 
@@ -242,7 +266,7 @@ namespace InputVisualizer
                 case DisplayLayoutStyle.Horizontal:
                     {
                         _rectangleEngine.SetOrientation(RectangeOrientation.Right);
-                        
+
                         break;
                     }
                 case DisplayLayoutStyle.VerticalDown:
@@ -265,6 +289,10 @@ namespace InputVisualizer
             if (string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase))
             {
                 _gameState.CurrentInputMode = InputMode.RetroSpy;
+            }
+            else if (string.Equals(_config.CurrentInputSource, "mister", StringComparison.InvariantCultureIgnoreCase))
+            {
+                _gameState.CurrentInputMode = InputMode.MiSTer;
             }
             else
             {
@@ -307,13 +335,18 @@ namespace InputVisualizer
 
         private void CloseCurrentInputMode()
         {
-            if (_serialReader != null)
+            if (_retroSpyControllerReader != null)
             {
-                _serialReader.Finish();
-                _serialReader = null;
+                _retroSpyControllerReader.Finish();
+                _retroSpyControllerReader = null;
             }
+            if (_misterControllerReader != null)
+            {
+                _misterControllerReader.Finish();
+                _misterControllerReader = null;
+            }
+            _gameState.ConnectedToMister = false;
             _usb2snesClient.StopListening();
-            _gameState.CurrentInputMode = InputMode.Gamepad;
         }
 
         private void InitRetroSpyInputSource()
@@ -326,25 +359,25 @@ namespace InputVisualizer
                     {
                         case RetroSpyControllerType.NES:
                             {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
+                                _retroSpyControllerReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketNES);
                                 _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.SNES:
                             {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
+                                _retroSpyControllerReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, SuperNESandNES.ReadFromPacketSNES);
                                 _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.Genesis:
                             {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
+                                _retroSpyControllerReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Sega.ReadFromPacket);
                                 _retroSpyControllerHandler = new RetroSpyControllerHandler(_gameState);
                                 break;
                             }
                         case RetroSpyControllerType.Playstation:
                             {
-                                _serialReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Playstation2.ReadFromPacket);
+                                _retroSpyControllerReader = new SerialControllerReader(_config.RetroSpyConfig.ComPortName, false, Playstation2.ReadFromPacket);
                                 _retroSpyControllerHandler = new PlaystationHandler(_gameState);
                                 break;
                             }
@@ -355,7 +388,8 @@ namespace InputVisualizer
                             }
                     }
 
-                    _serialReader.ControllerStateChanged += Reader_ControllerStateChanged;
+                    _retroSpyControllerReader.ControllerStateChanged += RetroSpy_ControllerStateChanged;
+                    _retroSpyControllerReader.Start();
                 }
                 catch (Exception ex)
                 {
@@ -364,9 +398,77 @@ namespace InputVisualizer
             }
         }
 
-        private void Reader_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
+        private void InitMisterInputSource()
+        {
+            try
+            {
+                CloseCurrentInputMode();
+                SetCurrentInputMode();
+
+                var hostName = _config.MisterConfig.Hostname;
+                var username = _config.MisterConfig.Username;
+                var password = _config.MisterConfig.Password;
+                var controller = _config.MisterConfig.Controller;
+
+                if (string.IsNullOrEmpty(hostName))
+                {
+                    _ui.ShowMessage("MiSTer Error", "Input source not yet configured");
+                    return;
+                }
+
+                _ui.ShowWaitMessage("MiSTer", "Connecting...");
+
+                _misterControllerReader = new SSHControllerReader(hostName, "/media/fat/retrospy/retrospy /dev/input/js{0}", MiSTerReader.ReadFromPacket, username, password, controller.ToString(), 5000, true);
+                _misterControllerReader.ControllerStateChanged += Mister_ControllerStateChanged;
+                _misterControllerReader.ControllerConnected += Mister_Connected;
+                _misterControllerReader.ControllerConnectionFailed += Mister_ConnectionFailed;
+                _retroSpyControllerHandler = new MisterHandler(_gameState);
+                _misterControllerReader.Start();
+
+            }
+            catch (Exception ex)
+            {
+                _ui.ShowMessage("MiSTer Error", ex.Message);
+            }
+        }
+
+        private void Mister_ConnectionFailed(object sender, ControllerConnectionFailedArgs e)
+        {
+            _ui.HideWaitMessage();
+            _gameState.ConnectedToMister = false;
+            if (e.Exception != null)
+            {
+                _ui.ShowMessage("MiSTer Error", e.Exception.Message);
+            }
+            else
+            {
+                _ui.ShowMessage("MiSTer", "Failed to connect");
+            }
+            _ui.UpdateMisterConfigureInputUI();
+        }
+
+        private void Mister_Connected(object sender, EventArgs e)
+        {
+            _ui.HideWaitMessage();
+            _gameState.ConnectedToMister = true;
+            _ui.UpdateMisterConfigureInputUI();
+        }
+
+        private void RetroSpy_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
         {
             _retroSpyControllerHandler.ProcessControllerState(e);
+        }
+
+        private void Mister_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
+        {
+            if (_ui.ListeningForInput)
+            {
+                _ui.CheckForMisterListeningInput(e);
+            }
+            else
+            {
+                _retroSpyControllerHandler.ProcessControllerState(e);
+            }
         }
 
         private async Task InitUsb2SnesInputSource()
@@ -439,6 +541,11 @@ namespace InputVisualizer
                 case InputMode.Usb2Snes:
                     {
                         InitUsb2SnesButtons();
+                        break;
+                    }
+                case InputMode.MiSTer:
+                    {
+                        InitMisterButtons();
                         break;
                     }
             }
@@ -530,6 +637,24 @@ namespace InputVisualizer
                     MappingType = mapping.MappingType,
                     MappedKey = mapping.MappedKey
                 });
+            }
+        }
+
+        private void InitMisterButtons()
+        {
+            _gameState.ButtonStates.Clear();
+
+            var mappingSet = _config.MisterConfig.GetCurrentMappingSet();
+            if (mappingSet == null)
+            {
+                return;
+            }
+            foreach (var mapping in mappingSet.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+            {
+                if (mapping.MappingType == ButtonMappingType.Button && mapping.MappedButtonType != ButtonType.NONE)
+                {
+                    _gameState.ButtonStates.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
+                }
             }
         }
 
@@ -651,6 +776,11 @@ namespace InputVisualizer
             var analogDpadState = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
             var timeStamp = DateTime.Now;
             var gamepad = _gameState.ActiveGamepadConfig;
+
+            if (gamepad == null)
+            {
+                return;
+            }
 
             foreach (var button in _gameState.ButtonStates)
             {

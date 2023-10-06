@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace InputVisualizer.retrospy
+namespace InputVisualizer.RetroSpy
 {
     public sealed class ControllerStateBuilder
     {

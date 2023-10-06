@@ -10,6 +10,7 @@ using Myra.Graphics2D.UI.ColorPicker;
 using System.IO.Ports;
 using Microsoft.Xna.Framework.Input;
 using Myra.Graphics2D.Brushes;
+using InputVisualizer.RetroSpy;
 
 namespace InputVisualizer.UI
 {
@@ -24,7 +25,14 @@ namespace InputVisualizer.UI
         private ButtonMapping _listeningMapping;
         private TextButton _listeningButton;
         private Grid _listeningGrid;
+        private string _originalListeningButtonText;
         private const int MAX_MAP_BUTTON_LENGTH = 20;
+
+        private TextBox _misterHostnameTextBox;
+        private TextBox _misterUsernameTextBox;
+        private TextBox _misterPasswordTextBox;
+        private ComboBox _misterControllerComboBox;
+        private TextButton _misterConnectButton;
 
         private HorizontalStackPanel _mainMenuContainer;
         private Dialog _waitMessageBox = null;
@@ -35,6 +43,8 @@ namespace InputVisualizer.UI
         public event EventHandler GamepadSettingsUpdated;
         public event EventHandler RetroSpySettingsUpdated;
         public event EventHandler Usb2SnesSettingsUpdated;
+        public event EventHandler MisterSettingsUpdated;
+        public event EventHandler MisterConnectionRequested;
         public event EventHandler DisplaySettingsUpdated;
         public event EventHandler<Usb2SnesGameChangedEventArgs> Usb2SnesGameChanged;
         public event EventHandler RefreshInputSources;
@@ -104,6 +114,7 @@ namespace InputVisualizer.UI
                 inputSourceCombo.Items.Add(new ListItem(name, Color.White, kvp.Key));
             }
             inputSourceCombo.Items.Add(new ListItem("RetroSpy", Color.White, "spy"));
+            inputSourceCombo.Items.Add(new ListItem("RetroSpy MiSTer", Color.White, "mister"));
             inputSourceCombo.Items.Add(new ListItem("Keyboard", Color.White, "keyboard"));
 
             foreach (var device in usb2SnesDevices)
@@ -145,6 +156,10 @@ namespace InputVisualizer.UI
                 if (_gameState.CurrentInputMode == InputMode.RetroSpy)
                 {
                     ShowConfigureRetroSpyDialog();
+                }
+                else if (_gameState.CurrentInputMode == InputMode.MiSTer)
+                {
+                    ShowConfigureMisterDialog();
                 }
                 else if (_gameState.CurrentInputMode == InputMode.Gamepad)
                 {
@@ -197,6 +212,30 @@ namespace InputVisualizer.UI
             _mainMenuContainer.Widgets.Add(menuBar);
         }
 
+        public void UpdateMisterConfigureInputUI()
+        {
+            if(_misterConnectButton == null)
+            {
+                return;
+            }    
+
+            if (_gameState.ConnectedToMister)
+            {
+                _misterConnectButton.Text = "Disconnect";
+                _misterConnectButton.Background = new SolidBrush(Color.DarkGreen);
+            }
+            else
+            {
+                _misterConnectButton.Text = "Connect to MiSTer";
+                _misterConnectButton.Background = null;
+            }
+
+            _misterHostnameTextBox.Enabled = !_gameState.ConnectedToMister;
+            _misterUsernameTextBox.Enabled = !_gameState.ConnectedToMister;
+            _misterPasswordTextBox.Enabled = !_gameState.ConnectedToMister;
+            _misterControllerComboBox.Enabled = !_gameState.ConnectedToMister;
+        }
+
         public void Render()
         {
             try
@@ -216,7 +255,12 @@ namespace InputVisualizer.UI
             {
                 _listeningForInput = false;
                 _listeningCancelPressed = true;
-                _listeningButton.Text = _listeningMapping.ButtonType.ToString();
+                _listeningButton.Text = _originalListeningButtonText;
+                return;
+            }
+
+            if (_gameState.CurrentInputMode != InputMode.Gamepad)
+            {
                 return;
             }
 
@@ -360,6 +404,208 @@ namespace InputVisualizer.UI
             }
         }
 
+        public void CheckForMisterListeningInput(ControllerStateEventArgs e)
+        {
+            if (_gameState.CurrentInputMode != InputMode.MiSTer)
+            {
+                return;
+            }
+
+            var buttonDetected = ButtonType.NONE;
+            if (_config.MisterConfig.UseLStickForDpad)
+            {
+                /* TODO */
+            }
+            else
+            {
+                foreach (var button in e.Buttons)
+                {
+                    if (button.Value)
+                    {
+                        if (Enum.IsDefined(typeof(ButtonType), button.Key))
+                        {
+                            buttonDetected = (ButtonType)Enum.Parse(typeof(ButtonType), button.Key);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (buttonDetected != ButtonType.NONE)
+            {
+                _listeningForInput = false;
+                _listeningMapping.MappingType = ButtonMappingType.Button;
+                _listeningMapping.MappedButtonType = buttonDetected;
+                _listeningMapping.MappedKey = Keys.None;
+                var buttonText = buttonDetected.ToString() + " Button";
+                buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
+                _listeningButton.Text = buttonText;
+
+                foreach (var mapping in _config.MisterConfig.GetCurrentMappingSet().ButtonMappings)
+                {
+                    if (mapping == _listeningMapping)
+                    {
+                        continue;
+                    }
+                    if (mapping.MappedButtonType == buttonDetected)
+                    {
+                        mapping.MappedButtonType = ButtonType.NONE;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if (textBox != null)
+                        {
+                            textBox.Text = mapping.MappedButtonType.ToString();
+                        }
+                    }
+                }
+            }
+        }
+
+        public void ShowConfigureMisterDialog()
+        {
+            var buttonMapWidgets = new List<Widget>();
+
+            var dialog = new Dialog
+            {
+                Title = "MiSTer Config",
+                TitleTextColor = Color.DarkSeaGreen
+            };
+
+            var buttonConfigGrid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var visibleLabel = CreateLabel("Visible", 0, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 0, 1, 1, 1);
+            var mappedToLabel = CreateLabel("Mapped To", 0, 2, 1, 1);
+            var colorLabel = CreateLabel("Color", 0, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 0, 4, 1, 2);
+            orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            buttonConfigGrid.Widgets.Add(visibleLabel);
+            buttonConfigGrid.Widgets.Add(buttonLabel);
+            buttonConfigGrid.Widgets.Add(mappedToLabel);
+            buttonConfigGrid.Widgets.Add(colorLabel);
+            buttonConfigGrid.Widgets.Add(orderLabel);
+
+            DrawButtonMappings(_config.MisterConfig.GetCurrentMappingSet().ButtonMappings, buttonConfigGrid, buttonMapWidgets, 1, showMapButton: true);
+
+            var mainConfigGrid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            mainConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            mainConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            mainConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            mainConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            mainConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var hostNameLabel = CreateLabel("Hostname", 0, 0, 1, 1, null, HorizontalAlignment.Right);
+            mainConfigGrid.Widgets.Add(hostNameLabel);
+            _misterHostnameTextBox = CreateTextBox(_config.MisterConfig.Hostname, 0, 1, 1, 3);
+            _misterHostnameTextBox.Width = 250;
+            _misterHostnameTextBox.TextChanged += (o, e) =>
+            {
+                _config.MisterConfig.Hostname = _misterHostnameTextBox.Text;
+            };
+            mainConfigGrid.Widgets.Add(_misterHostnameTextBox);
+            var userNameLabel = CreateLabel("Username", 1, 0, 1, 1, null, HorizontalAlignment.Right);
+            mainConfigGrid.Widgets.Add(userNameLabel);
+            _misterUsernameTextBox = CreateTextBox(_config.MisterConfig.Username, 1, 1, 1, 1);
+            _misterUsernameTextBox.Width = 150;
+            _misterUsernameTextBox.TextChanged += (o, e) =>
+            {
+                _config.MisterConfig.Username = _misterUsernameTextBox.Text;
+            };
+            mainConfigGrid.Widgets.Add(_misterUsernameTextBox);
+            var passwordLabel = CreateLabel("Password", 1, 2, 1, 1, null, HorizontalAlignment.Right);
+            mainConfigGrid.Widgets.Add(passwordLabel);
+            _misterPasswordTextBox = CreateTextBox(_config.MisterConfig.Password, 1, 3, 1, 1);
+            _misterPasswordTextBox.Width = 150;
+            _misterPasswordTextBox.TextChanged += (o, e) =>
+            {
+                _config.MisterConfig.Password = _misterPasswordTextBox.Text;
+            };
+            _misterPasswordTextBox.PasswordField = true;
+            mainConfigGrid.Widgets.Add(_misterPasswordTextBox);
+
+            var styleLabel = CreateLabel("Style", 2, 0, 1, 1, null, HorizontalAlignment.Right);
+            mainConfigGrid.Widgets.Add(styleLabel);
+            var styleCombo = CreateComboBox(2, 1, 1, 1);
+            foreach (var value in _config.MisterConfig.ButtonMappingSets.Keys)
+            {
+                var item = new ListItem(value.GetDescription(), Color.White, value);
+                styleCombo.Items.Add(item);
+                if (_config.MisterConfig.Style == value)
+                {
+                    styleCombo.SelectedItem = item;
+                }
+            }
+            styleCombo.SelectedIndexChanged += (o, e) =>
+            {
+                _config.MisterConfig.Style = (GamepadStyle)styleCombo.SelectedItem.Tag;
+                DrawButtonMappings(_config.MisterConfig.GetCurrentMappingSet().ButtonMappings, buttonConfigGrid, buttonMapWidgets, 1, showMapButton: true);
+            };
+            mainConfigGrid.Widgets.Add(styleCombo);
+
+            var controllerNumberLabel = CreateLabel("Controller", 2, 2, 1, 1, null, HorizontalAlignment.Right);
+            mainConfigGrid.Widgets.Add(controllerNumberLabel);
+
+            _misterControllerComboBox = CreateComboBox(2, 3, 1, 1);
+            for (var i = 0; i < 10; i++)
+            {
+                var item = new ListItem(i.ToString(), Color.White, i);
+                _misterControllerComboBox.Items.Add(item);
+                if (_config.MisterConfig.Controller == i)
+                {
+                    _misterControllerComboBox.SelectedItem = item;
+                }
+            }
+            _misterControllerComboBox.SelectedIndexChanged += (o, e) =>
+            {
+                _config.MisterConfig.Controller = (int)_misterControllerComboBox.SelectedItem.Tag;
+            };
+            mainConfigGrid.Widgets.Add(_misterControllerComboBox);
+
+            _misterConnectButton = CreateButton("Connect to MiSTer", 3, 0, 1, 4);
+            _misterConnectButton.HorizontalAlignment = HorizontalAlignment.Center;
+            _misterConnectButton.Click += (s, a) =>
+            {
+                MisterConnectionRequested?.Invoke(this, new EventArgs());
+            };
+            mainConfigGrid.Widgets.Add(_misterConnectButton);
+
+            UpdateMisterConfigureInputUI();
+
+            var container = new VerticalStackPanel();
+            container.Widgets.Add(mainConfigGrid);
+            container.Widgets.Add(buttonConfigGrid);
+
+            dialog.Content = container;
+            dialog.ConfirmKey = Keys.None;
+            dialog.CloseKey = Keys.None;
+            dialog.ButtonCancel.Visible = false;
+            dialog.Closed += (s, a) =>
+            {
+                MisterSettingsUpdated?.Invoke(this, EventArgs.Empty);
+            };
+            dialog.ShowModal(_desktop);
+        }
 
         private void ShowConfigureGamePadDialog(Dictionary<string, SystemGamePadInfo> systemGamepads)
         {
@@ -660,7 +906,11 @@ namespace InputVisualizer.UI
 
                 if (showMapButton)
                 {
-                    var listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button/Key...";
+                    var listenPrompt = "Press Button";
+                    if (_gameState.CurrentInputMode == InputMode.Gamepad && _gameState.ActiveGamepadConfig != null)
+                    {
+                        listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button/Key...";
+                    }
                     var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
                     buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                     var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
@@ -669,6 +919,12 @@ namespace InputVisualizer.UI
                     mapButton.Tag = mapping;
                     mapButton.Click += (s, e) =>
                     {
+                        if (_gameState.CurrentInputMode == InputMode.MiSTer && !_gameState.ConnectedToMister)
+                        {
+                            var messageBox = Dialog.CreateMessageBox("Button Mapping", "Connect to MiSTer before mapping buttons");
+                            messageBox.ShowModal(_desktop);
+                            return;
+                        }
                         if (_listeningForInput)
                         {
                             var messageBox = Dialog.CreateMessageBox("Button Mapping", "Finish mapping button or hit ESC to cancel");
@@ -677,6 +933,7 @@ namespace InputVisualizer.UI
                         }
                         _listeningForInput = true;
                         _listeningButton = mapButton;
+                        _originalListeningButtonText = _listeningButton.Text;
                         _listeningButton.Text = listenPrompt;
                         _listeningMapping = mapping;
                         _listeningGrid = grid;
