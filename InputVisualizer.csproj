@@ -31,7 +31,7 @@
     <Folder Include="Fonts\" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="LICENSE_Renci_SSH.md">
+    <None Update="LICENSE.Renci.SSH.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="README.md">
