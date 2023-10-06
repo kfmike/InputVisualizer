@@ -6,26 +6,42 @@ using System;
 
 namespace InputVisualizer.RetroSpy
 {
-    public sealed class SerialControllerReader : IControllerReader, IDisposable
+    public sealed class SSHControllerReader : ISSHControllerReader, IDisposable
     {
         public event EventHandler<ControllerStateEventArgs>? ControllerStateChanged;
+
         public event EventHandler? ControllerDisconnected;
+        public event EventHandler ControllerConnected;
+        public event EventHandler<ControllerConnectionFailedArgs> ControllerConnectionFailed;
 
-        private readonly Func<byte[]?, ControllerStateEventArgs?> _packetParser;
-        private SerialMonitor? _serialMonitor;
+        private readonly Func<byte[]?, ControllerStateEventArgs?>? _packetParser;
+        private SSHMonitor? _serialMonitor;
 
-        public SerialControllerReader(string? portName, bool useLagFix, Func<byte[]?, ControllerStateEventArgs?> packetParser)
+        public SSHControllerReader(string hostname, string arguments, Func<byte[]?, ControllerStateEventArgs?>? packetParser,
+            string username, string password, string? commandSub, int delayInMilliseconds = 0, bool useQuickDisconnect = false)
         {
             _packetParser = packetParser;
 
-            _serialMonitor = new SerialMonitor(portName, useLagFix);
+            _serialMonitor = new SSHMonitor(hostname, arguments, username, password, commandSub, delayInMilliseconds, useQuickDisconnect);
             _serialMonitor.PacketReceived += SerialMonitor_PacketReceived;
+            _serialMonitor.Connected += SerialMonitor_Connected;
             _serialMonitor.Disconnected += SerialMonitor_Disconnected;
+            _serialMonitor.ConnectionFailed += SerialMonitor_ConnectionFailed;
         }
 
         public void Start()
         {
             _serialMonitor.Start();
+        }
+
+        private void SerialMonitor_Connected(object sender, EventArgs e)
+        {
+            ControllerConnected?.Invoke(this, e);
+        }
+
+        private void SerialMonitor_ConnectionFailed(object sender, ControllerConnectionFailedArgs e)
+        {
+            ControllerConnectionFailed?.Invoke(this, e);
         }
 
         private void SerialMonitor_Disconnected(object? sender, EventArgs e)
@@ -38,7 +54,7 @@ namespace InputVisualizer.RetroSpy
         {
             if (ControllerStateChanged != null)
             {
-                ControllerStateEventArgs? state = _packetParser(packet.GetPacket());
+                ControllerStateEventArgs? state = _packetParser != null ? _packetParser(packet.GetPacket()) : null;
                 if (state != null)
                 {
                     ControllerStateChanged(this, state);
@@ -67,7 +83,6 @@ namespace InputVisualizer.RetroSpy
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

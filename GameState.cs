@@ -13,6 +13,7 @@ namespace InputVisualizer
         public InputMode CurrentInputMode { get; set; } = InputMode.Gamepad;
         public PlayerIndex CurrentPlayerIndex { get; set; } = PlayerIndex.One;
         public DateTime MinAge { get; set; }
+        public bool ConnectedToMister { get; set; } = false;
         public VisualizerEngine CurrentLayout { get; set; }
         public Dictionary<string, ButtonStateHistory> ButtonStates = new Dictionary<string, ButtonStateHistory>();
         public Dictionary<string, int> FrequencyDict = new Dictionary<string, int>();

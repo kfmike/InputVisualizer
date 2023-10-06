@@ -6,6 +6,7 @@ namespace InputVisualizer
         None = 0,
         Gamepad,
         RetroSpy,
-        Usb2Snes
+        Usb2Snes,
+        MiSTer
     }
 }

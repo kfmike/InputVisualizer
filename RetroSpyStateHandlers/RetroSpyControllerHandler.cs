@@ -1,4 +1,4 @@
-﻿using InputVisualizer.retrospy;
+﻿using InputVisualizer.RetroSpy;
 using System;
 
 namespace InputVisualizer.RetroSpyStateHandlers

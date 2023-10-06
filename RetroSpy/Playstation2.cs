@@ -4,7 +4,7 @@
 
 using System;
 
-namespace InputVisualizer.retrospy
+namespace InputVisualizer.RetroSpy
 {
     public static class Playstation2
     {

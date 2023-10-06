@@ -10,6 +10,7 @@ namespace InputVisualizer.Config
         public static string CONFIG_PATH = @"config.json";
 
         public RetroSpyConfig RetroSpyConfig { get; set; } = new RetroSpyConfig();
+        public MisterConfig MisterConfig { get; set; } = new MisterConfig();
         public Usb2SnesConfig Usb2SnesConfig { get; set; } = new Usb2SnesConfig();
         public DisplayConfig DisplayConfig { get; set; } = new DisplayConfig();
         public string CurrentInputSource { get; set; }
