@@ -6,7 +6,7 @@ Useful for speedrunners and streamers alike.
 
 **Features**
 
-- PC gamepad and keyboard support with customizable input mapping
+- PC XInput and keyboard support with customizable input mapping
 - RetroSpy/NintendoSpy support for NES, SNES, Sega Genesis, and Playstation 1/2 consoles
 - SD2SNES/FXPAK PRO support for SNES hardware using Usb2Snes/QUsb2Snes/SNI
 - Customizable display with background transparency for easy integration into streaming layouts
