@@ -214,10 +214,10 @@ namespace InputVisualizer.UI
 
         public void UpdateMisterConfigureInputUI()
         {
-            if(_misterConnectButton == null)
+            if (_misterConnectButton == null)
             {
                 return;
-            }    
+            }
 
             if (_gameState.ConnectedToMister)
             {
@@ -586,6 +586,11 @@ namespace InputVisualizer.UI
             _misterConnectButton.HorizontalAlignment = HorizontalAlignment.Center;
             _misterConnectButton.Click += (s, a) =>
             {
+                if (string.IsNullOrEmpty(_misterHostnameTextBox.Text))
+                {
+                    ShowMessage("MiSTer", "Hostname required");
+                    return;
+                }
                 MisterConnectionRequested?.Invoke(this, new EventArgs());
             };
             mainConfigGrid.Widgets.Add(_misterConnectButton);
@@ -1044,7 +1049,7 @@ namespace InputVisualizer.UI
             var aboutLabels = new List<Label>
             {
                 CreateLabel("Version:", 0, 0, 1, 1),
-                CreateLabel("1.3", 0, 1, 1, 1),
+                CreateLabel("1.4", 0, 1, 1, 1),
                 CreateLabel("Author:", 1, 0, 1, 1),
                 CreateLabel("KungFusedMike", 1, 1, 1, 1),
                 CreateLabel("Email:", 2, 0, 1, 1),
