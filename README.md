@@ -13,8 +13,9 @@ Useful for speedrunners and streamers alike.
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
 - Compact display view option to only show active buttons
+- Option to display illegal d-pad input combinations such as up + down at the same time
 
-![image](https://github.com/kfmike/InputVisualizer/assets/57804306/993da0c6-c26b-4080-b35a-cb3d063ad2dc)
+![visualizer_sample](https://github.com/kfmike/InputVisualizer/assets/57804306/0cec5e78-2a94-45d9-8a19-a25e37d51b35)
 
 # OBS Settings
 
