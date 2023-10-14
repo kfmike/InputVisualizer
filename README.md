@@ -15,7 +15,7 @@ Useful for speedrunners and streamers alike.
 - Compact display view option to only show active buttons
 - Option to display illegal d-pad input combinations such as up + down at the same time
 
-![visualizer_sample](https://github.com/kfmike/InputVisualizer/assets/57804306/0cec5e78-2a94-45d9-8a19-a25e37d51b35)
+![visualizer_sample](https://github.com/kfmike/InputVisualizer/assets/57804306/fda458a9-939a-4f20-98e3-3fccf51d01db)
 
 # OBS Settings
 
