@@ -216,6 +216,7 @@ namespace InputVisualizer
             {
                 _config.CurrentInputSource = "keyboard";
             }
+            _config.DisplayConfig.Speed = (float)Math.Round(_config.DisplayConfig.Speed);
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
             _gameState.DisplayIllegalInputs = _config.DisplayConfig.DisplayIllegalInputs;
             _config.Save();
