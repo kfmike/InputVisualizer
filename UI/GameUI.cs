@@ -1162,7 +1162,7 @@ namespace InputVisualizer.UI
             grid.Widgets.Add(showIdleLabel);
             var displayIdleLindesCheck = new CheckBox()
             {
-                GridRow = 7,
+                GridRow = 8,
                 GridColumn = 2,
                 IsChecked = _config.DisplayConfig.DrawIdleLines
             };
