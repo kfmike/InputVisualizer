@@ -15,8 +15,7 @@ namespace InputVisualizer.VisualizationEngines
         public bool ButtonIsCurrentlyPressed { get; set; }
         public TimeSpan ButtonPressedElapsedTime { get; set; } = TimeSpan.Zero;
         public Color Color { get; set; } = Color.PapayaWhip;
-        public List<Vector2> PressedVectors { get; set; } = new List<Vector2>();
-        public List<Vector2> IllegalInputVectors { get; set; } = new List<Vector2>();
+        public Dictionary<long,PressedVector> PressedVectors { get; set; } = new Dictionary<long, PressedVector>();
         public RectangleContainerState State { get; set; } = RectangleContainerState.None;
         public int LastPosition { get; set; } = -1;
         public int CurrentPosition { get; set; } = -1;
@@ -29,8 +28,8 @@ namespace InputVisualizer.VisualizationEngines
         public Rectangle OffLineRect = new Rectangle(0, 0, 1, 1);
         public Rectangle SquareOuterRect = new Rectangle(0, 0, 13, 13);
         public Rectangle SquareInnerRect = new Rectangle(0, 0, 11, 11);
-        public List<Rectangle> PressedRects = new List<Rectangle>();
-        public List<Rectangle> IllegalInputRects = new List<Rectangle>();
+        public List<Rectangle> DrawRects = new List<Rectangle>();
+        public List<Rectangle> IllegalInputDrawRects = new List<Rectangle>();
         public Vector2 InfoVector = new Vector2();
         public Vector2 IllegalInputVector = new Vector2();
 
