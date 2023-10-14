@@ -10,6 +10,8 @@ namespace InputVisualizer
     public class CommonTextures
     {
         public Texture2D Pixel {  get; set; }
+        public Texture2D IllegalInput { get; set; }
+
         public Dictionary<string, Texture2D> ButtonImages = new Dictionary<string, Texture2D>();
         public SpriteFontBase Font18;
         public FontSystem FontSystem;
@@ -47,6 +49,8 @@ namespace InputVisualizer
             ButtonImages.Add(ButtonType.R2.ToString(), content.Load<Texture2D>("r2_button"));
             ButtonImages.Add(ButtonType.NONE.ToString(), content.Load<Texture2D>("empty_button"));
 
+            IllegalInput = content.Load<Texture2D>("illegal_input");
+            
             FontSystem = new FontSystem();
             FontSystem.AddFont(File.ReadAllBytes(@"Fonts\DroidSans.ttf"));
             Font18 = FontSystem.GetFont(18);

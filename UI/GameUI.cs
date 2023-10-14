@@ -1129,7 +1129,7 @@ namespace InputVisualizer.UI
             colorButton.TextColor = _config.DisplayConfig.BackgroundColor;
             colorButton.Click += (s, e) =>
             {
-                ChooseBackgroundColor(colorButton);
+                ChooseColor(colorButton);
             };
             grid.Widgets.Add(colorButton);
 
@@ -1140,15 +1140,25 @@ namespace InputVisualizer.UI
             emptyContainerColorButton.TextColor = _config.DisplayConfig.EmptyContainerColor;
             emptyContainerColorButton.Click += (s, e) =>
             {
-                ChooseBackgroundColor(emptyContainerColorButton);
+                ChooseColor(emptyContainerColorButton);
             };
             grid.Widgets.Add(emptyContainerColorButton);
 
+            var illegalInputColorLabel = CreateLabel("Illegal Inputs", 6, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(illegalInputColorLabel);
 
-            var linesLabel = CreateLabel("Lines", 6, 0, 1, 1, Color.DarkSeaGreen);
+            var illegalInputColorButton = CreateButton("Color", 6, 2, 1, 1);
+            illegalInputColorButton.TextColor = _config.DisplayConfig.IllegalInputColor;
+            illegalInputColorButton.Click += (s, e) =>
+            {
+                ChooseColor(illegalInputColorButton);
+            };
+            grid.Widgets.Add(illegalInputColorButton);
+
+            var linesLabel = CreateLabel("Lines", 7, 0, 1, 1, Color.DarkSeaGreen);
             grid.Widgets.Add(linesLabel);
 
-            var showIdleLabel = CreateLabel("Idle Lines Enabled", 7, 0, 1, 1, null, HorizontalAlignment.Right);
+            var showIdleLabel = CreateLabel("Idle Lines Enabled", 8, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(showIdleLabel);
             var displayIdleLindesCheck = new CheckBox()
             {
@@ -1158,20 +1168,20 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayIdleLindesCheck);
 
-            var lineLengthLabel = CreateLabel("Length", 8, 0, 1, 1, null, HorizontalAlignment.Right);
+            var lineLengthLabel = CreateLabel("Length", 9, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(lineLengthLabel);
 
-            var displayWidthText = CreateTextBox(_config.DisplayConfig.LineLength.ToString(), 8, 2, 1, 1);
+            var displayWidthText = CreateTextBox(_config.DisplayConfig.LineLength.ToString(), 9, 2, 1, 1);
             displayWidthText.Width = 50;
             grid.Widgets.Add(displayWidthText);
 
-            var speedLabel = CreateLabel("Speed", 9, 0, 1, 1, null, HorizontalAlignment.Right);
+            var speedLabel = CreateLabel("Speed", 10, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(speedLabel);
-            var speedMinValueLabel = CreateLabel("Slow", 9, 1, 1, 1, null, HorizontalAlignment.Right);
+            var speedMinValueLabel = CreateLabel("Slow", 10, 1, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(speedMinValueLabel);
             var displaySpeedSpin = new HorizontalSlider()
             {
-                GridRow = 9,
+                GridRow = 10,
                 GridColumn = 2,
                 GridColumnSpan = 1,
                 Value = _config.DisplayConfig.Speed,
@@ -1180,17 +1190,17 @@ namespace InputVisualizer.UI
                 Width = 150
             };
             grid.Widgets.Add(displaySpeedSpin);
-            var speedMaxValueLabel = CreateLabel("Fast", 9, 3, 1, 1);
+            var speedMaxValueLabel = CreateLabel("Fast", 10, 3, 1, 1);
             grid.Widgets.Add(speedMaxValueLabel);
 
-            var dimLineLabel = CreateLabel("Dim Speed", 10, 0, 1, 1, null, HorizontalAlignment.Right);
+            var dimLineLabel = CreateLabel("Dim Speed", 11, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(dimLineLabel);
 
-            var dimLineLabelMinValueLabel = CreateLabel("Instant", 10, 1, 1, 1, null, HorizontalAlignment.Right);
+            var dimLineLabelMinValueLabel = CreateLabel("Instant", 11, 1, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(dimLineLabelMinValueLabel);
             var turnOffLineSpeedSpin = new HorizontalSlider()
             {
-                GridRow = 10,
+                GridRow = 11,
                 GridColumn = 2,
                 GridColumnSpan = 1,
                 Value = _config.DisplayConfig.TurnOffLineSpeed / 50.0f,
@@ -1199,46 +1209,59 @@ namespace InputVisualizer.UI
                 Width = 150
             };
             grid.Widgets.Add(turnOffLineSpeedSpin);
-            var dimLineLabelMaxValueLabel = CreateLabel("Never", 10, 3, 1, 1);
+            var dimLineLabelMaxValueLabel = CreateLabel("Never", 11, 3, 1, 1);
             grid.Widgets.Add(dimLineLabelMaxValueLabel);
 
-            var metricsLabel = CreateLabel("Metrics", 11, 0, 1, 1, Color.DarkSeaGreen);
+            var metricsLabel = CreateLabel("Metrics", 12, 0, 1, 1, Color.DarkSeaGreen);
             grid.Widgets.Add(metricsLabel);
-            var durationLabel = CreateLabel("Pressed Durations", 12, 0, 1, 1, null, HorizontalAlignment.Right);
+            var durationLabel = CreateLabel("Pressed Durations", 13, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(durationLabel);
-            var minSecondsShowDurationLabel = CreateLabel("Min", 12, 1, 1, 1, null, HorizontalAlignment.Right);
+            var minSecondsShowDurationLabel = CreateLabel("Min", 13, 1, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(minSecondsShowDurationLabel);
-            var pressThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayDuration.ToString(), 12, 2, 1, 1);
+            var pressThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayDuration.ToString(), 13, 2, 1, 1);
             pressThresholdText.Width = 50;
             grid.Widgets.Add(pressThresholdText);
-            var displayDurationLabel = CreateLabel("Enabled", 12, 3, 1, 1);
+            var displayDurationLabel = CreateLabel("Enabled", 13, 3, 1, 1);
             grid.Widgets.Add(displayDurationLabel);
 
             var displayDurationCheck = new CheckBox()
             {
-                GridRow = 12,
+                GridRow = 13,
                 GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayDuration,
             };
             grid.Widgets.Add(displayDurationCheck);
 
-            var mashLabel = CreateLabel("Mash Counts", 13, 0, 1, 1, null, HorizontalAlignment.Right);
+            var mashLabel = CreateLabel("Mash Counts", 14, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(mashLabel);
-            var minMashLabel = CreateLabel("Min", 13, 1, 1, 1, null, HorizontalAlignment.Right);
+            var minMashLabel = CreateLabel("Min", 14, 1, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(minMashLabel);
-            var mashThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayFrequency.ToString(), 13, 2, 1, 1);
+            var mashThresholdText = CreateTextBox(_config.DisplayConfig.MinDisplayFrequency.ToString(), 14, 2, 1, 1);
             mashThresholdText.Width = 50;
             grid.Widgets.Add(mashThresholdText);
-            var displayFrequencyLabel = CreateLabel("Enabled", 13, 3, 1, 1);
+            var displayFrequencyLabel = CreateLabel("Enabled", 14, 3, 1, 1);
             grid.Widgets.Add(displayFrequencyLabel);
 
             var displayFrequencyCheck = new CheckBox()
             {
-                GridRow = 13,
+                GridRow = 14,
                 GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayFrequency,
             };
             grid.Widgets.Add(displayFrequencyCheck);
+             
+            var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 15, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(illegalInputsLabel);
+            var illegalInputsEnabledLabel = CreateLabel("Enabled", 15, 3, 1, 1);
+            grid.Widgets.Add(illegalInputsEnabledLabel);
+
+            var illegalInputCheck = new CheckBox()
+            {
+                GridRow = 15,
+                GridColumn = 4,
+                IsChecked = _config.DisplayConfig.DisplayIllegalInputs,
+            };
+            grid.Widgets.Add(illegalInputCheck);
 
             dialog.Content = grid;
             dialog.Closed += (s, a) =>
@@ -1271,6 +1294,8 @@ namespace InputVisualizer.UI
                 _config.DisplayConfig.BackgroundColor = colorButton.TextColor;
                 _config.DisplayConfig.Layout = (DisplayLayoutStyle)layoutCombo.SelectedItem.Tag;
                 _config.DisplayConfig.EmptyContainerColor = emptyContainerColorButton.TextColor;
+                _config.DisplayConfig.IllegalInputColor = illegalInputColorButton.TextColor;
+                _config.DisplayConfig.DisplayIllegalInputs = illegalInputCheck.IsChecked;
 
                 DisplaySettingsUpdated?.Invoke(this, EventArgs.Empty);
             };
@@ -1321,7 +1346,7 @@ namespace InputVisualizer.UI
             };
         }
 
-        private void ChooseBackgroundColor(TextButton colorButton)
+        private void ChooseColor(TextButton colorButton)
         {
             var colorWindow = new ColorPickerDialog();
             colorWindow.Color = colorButton.TextColor;
