@@ -21,6 +21,7 @@ namespace InputVisualizer.VisualizationEngines
 
         protected RectangeOrientation _orientation = RectangeOrientation.Right;
         protected int _maxContainers = -1;
+        private Color _illegalInputColor;
 
         private Dictionary<string, RectangleContainer> _buttonContainers = new Dictionary<string, RectangleContainer>();
         private List<RectangleContainer> _emptyContainers = new List<RectangleContainer>();
@@ -32,8 +33,9 @@ namespace InputVisualizer.VisualizationEngines
             _orientation = orientation;
         }
 
-        public void UpdateContainerSettings(int maxContainers, Color emptyContainercolor)
+        public void UpdateContainerSettings(int maxContainers, Color emptyContainercolor, Color illegalInputColor)
         {
+            _illegalInputColor = illegalInputColor;
             _maxContainers = maxContainers;
             _emptyContainers.Clear();
             for (var i = 0; i < _maxContainers; i++)
@@ -85,17 +87,17 @@ namespace InputVisualizer.VisualizationEngines
             {
                 case RectangeOrientation.Right:
                     {
-                        UpdateHorizontalContainerDrawData(lineLength);
+                        UpdateHorizontalContainerDrawData(lineLength, gameState.DisplayIllegalInputs);
                         break;
                     }
                 case RectangeOrientation.Down:
                     {
-                        UpdateVerticalDownContainerDrawData(lineLength);
+                        UpdateVerticalDownContainerDrawData(lineLength, gameState.DisplayIllegalInputs);
                         break;
                     }
                 case RectangeOrientation.Up:
                     {
-                        UpdateVerticalUpContainerDrawData(lineLength);
+                        UpdateVerticalUpContainerDrawData(lineLength, gameState.DisplayIllegalInputs);
                         break;
                     }
             }
@@ -135,12 +137,12 @@ namespace InputVisualizer.VisualizationEngines
                     spriteBatch.Draw(textures.ButtonImages[bType], container.ButtonVector, container.Color * buttonFactor);
                 }
 
-                spriteBatch.Draw(textures.Pixel, container.SquareOuterRect, null, container.Color * dimFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-                spriteBatch.Draw(textures.Pixel, container.SquareInnerRect, null, Color.Black * squareInnerFactor, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                spriteBatch.Draw(textures.Pixel, container.SquareOuterRect, null, container.Color * dimFactor, 0, Vector2.Zero, SpriteEffects.None, 0);
+                spriteBatch.Draw(textures.Pixel, container.SquareInnerRect, null, Color.Black * squareInnerFactor, 0, Vector2.Zero, SpriteEffects.None, 0);
 
                 if (config.DisplayConfig.DrawIdleLines)
                 {
-                    spriteBatch.Draw(textures.Pixel, container.OffLineRect, null, container.Color * dimFactor, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0);
+                    spriteBatch.Draw(textures.Pixel, container.OffLineRect, null, container.Color * dimFactor, 0.0f, Vector2.Zero, SpriteEffects.None, 0);
                 }
 
                 if (container.IsEmptyContainer)
@@ -150,28 +152,42 @@ namespace InputVisualizer.VisualizationEngines
 
                 foreach (var rect in container.PressedRects)
                 {
-                    spriteBatch.Draw(textures.Pixel, rect, null, container.Color, 0, new Vector2(0, 0), SpriteEffects.None, 0);
+                    spriteBatch.Draw(textures.Pixel, rect, null, container.Color, 0, Vector2.Zero, SpriteEffects.None, 0);
                 }
-
-                if (container.ButtonIsCurrentlyPressed && _orientation == RectangeOrientation.Right)
+                if (gameState.DisplayIllegalInputs)
                 {
-                    spriteBatch.Draw(textures.Pixel, container.SquareOuterRect, null, container.Color * 0.75f, 0, new Vector2(0, 0), SpriteEffects.None, 0);
-
-                    if (config.DisplayConfig.DisplayDuration)
+                    foreach (var rect in container.IllegalInputRects)
                     {
-                        var elapsed = container.ButtonPressedElapsedTime;
-                        if (elapsed.TotalSeconds > config.DisplayConfig.MinDisplayDuration)
-                        {
-                            spriteBatch.DrawString(textures.Font18, elapsed.ToString("ss':'f"), container.InfoVector, container.Color);
-                        }
+                        spriteBatch.Draw(textures.Pixel, rect, null, _illegalInputColor, 0, Vector2.Zero, SpriteEffects.None, 0);
                     }
                 }
 
-                if (config.DisplayConfig.DisplayFrequency)
+                if (gameState.DisplayIllegalInputs && container.IllegalInputRects.Count > 0)
                 {
-                    if (gameState.FrequencyDict[container.ButtonName] >= config.DisplayConfig.MinDisplayFrequency)
+                    spriteBatch.Draw(textures.IllegalInput, container.IllegalInputVector, Color.White);
+                }
+                else
+                {
+                    if (container.ButtonIsCurrentlyPressed && _orientation == RectangeOrientation.Right)
                     {
-                        spriteBatch.DrawString(textures.Font18, $"x{gameState.FrequencyDict[container.ButtonName]}", container.InfoVector, container.Color);
+                        spriteBatch.Draw(textures.Pixel, container.SquareOuterRect, null, container.Color * 0.75f, 0, Vector2.Zero, SpriteEffects.None, 0);
+
+                        if (config.DisplayConfig.DisplayDuration)
+                        {
+                            var elapsed = container.ButtonPressedElapsedTime;
+                            if (elapsed.TotalSeconds > config.DisplayConfig.MinDisplayDuration)
+                            {
+                                spriteBatch.DrawString(textures.Font18, elapsed.ToString("ss':'f"), container.InfoVector, container.Color);
+                            }
+                        }
+                    }
+
+                    if (config.DisplayConfig.DisplayFrequency)
+                    {
+                        if (gameState.FrequencyDict[container.ButtonName] >= config.DisplayConfig.MinDisplayFrequency)
+                        {
+                            spriteBatch.DrawString(textures.Font18, $"x{gameState.FrequencyDict[container.ButtonName]}", container.InfoVector, container.Color);
+                        }
                     }
                 }
             }
@@ -232,7 +248,7 @@ namespace InputVisualizer.VisualizationEngines
             }
         }
 
-        private void UpdateHorizontalContainerDrawData(int lineLength)
+        private void UpdateHorizontalContainerDrawData(int lineLength, bool processIllegalInputs)
         {
             var currX = TOP_LEFT_X;
             var currY = TOP_LEFT_Y;
@@ -263,15 +279,33 @@ namespace InputVisualizer.VisualizationEngines
                 container.OffLineRect.Width = lineLength;
                 container.OffLineRect.Height = 1;
                 container.InfoVector = new Vector2(currX + 31 + lineLength + 5, currY - 1);
+                container.IllegalInputVector = new Vector2(currX + 31 + lineLength + 5, currY + 1);
 
                 foreach (var vector in container.PressedVectors)
                 {
                     container.PressedRects.Add(new Rectangle(currX + 31 + (int)vector.X, currY + 8 - RECT_OFFSET - 1, (int)vector.Y, RECT_HEIGHT));
                 }
+                if (processIllegalInputs)
+                {
+                    if (container.UnmappedButtonName == "UP" || container.UnmappedButtonName == "DOWN")
+                    {
+                        foreach (var vector in _buttonContainers["updown_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 31 + (int)vector.X, currY + 8 - RECT_OFFSET - 1, (int)vector.Y, RECT_HEIGHT));
+                        }
+                    }
+                    else if (container.UnmappedButtonName == "LEFT" || container.UnmappedButtonName == "RIGHT")
+                    {
+                        foreach (var vector in _buttonContainers["leftright_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 31 + (int)vector.X, currY + 8 - RECT_OFFSET - 1, (int)vector.Y, RECT_HEIGHT));
+                        }
+                    }
+                }
             }
         }
 
-        private void UpdateVerticalDownContainerDrawData(int lineLength)
+        private void UpdateVerticalDownContainerDrawData(int lineLength, bool processIllegalInputs)
         {
             var currX = TOP_LEFT_X;
             var currY = TOP_LEFT_Y;
@@ -302,15 +336,33 @@ namespace InputVisualizer.VisualizationEngines
                 container.OffLineRect.Width = 1;
                 container.OffLineRect.Height = lineLength;
                 container.InfoVector = new Vector2(currX - 1, currY + 31 + lineLength + 5);
+                container.IllegalInputVector = new Vector2(currX + 1, currY + 31 + lineLength + 7);
 
                 foreach (var vector in container.PressedVectors)
                 {
                     container.PressedRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY + 31 + (int)vector.X, RECT_HEIGHT, (int)vector.Y));
                 }
+                if (processIllegalInputs)
+                {
+                    if (container.UnmappedButtonName == "UP" || container.UnmappedButtonName == "DOWN")
+                    {
+                        foreach (var vector in _buttonContainers["updown_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY + 31 + (int)vector.X, RECT_HEIGHT, (int)vector.Y));
+                        }
+                    }
+                    else if (container.UnmappedButtonName == "LEFT" || container.UnmappedButtonName == "RIGHT")
+                    {
+                        foreach (var vector in _buttonContainers["leftright_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY + 31 + (int)vector.X, RECT_HEIGHT, (int)vector.Y));
+                        }
+                    }
+                }
             }
         }
 
-        private void UpdateVerticalUpContainerDrawData(int lineLength)
+        private void UpdateVerticalUpContainerDrawData(int lineLength, bool processIllegalInputs)
         {
             var currX = TOP_LEFT_X;
             var currY = TOP_LEFT_Y + lineLength + 31 + 5;
@@ -341,10 +393,28 @@ namespace InputVisualizer.VisualizationEngines
                 container.OffLineRect.Width = 1;
                 container.OffLineRect.Height = lineLength;
                 container.InfoVector = new Vector2(currX - 1, currY - 31 - lineLength - 5);
+                container.IllegalInputVector = new Vector2(currX + 1, currY - 31 - lineLength - 3);
 
                 foreach (var vector in container.PressedVectors)
                 {
                     container.PressedRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY - 15 - (int)vector.X - (int)vector.Y, RECT_HEIGHT, (int)vector.Y));
+                }
+                if (processIllegalInputs)
+                {
+                    if (container.UnmappedButtonName == "UP" || container.UnmappedButtonName == "DOWN")
+                    {
+                        foreach (var vector in _buttonContainers["updown_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY - 15 - (int)vector.X - (int)vector.Y, RECT_HEIGHT, (int)vector.Y));
+                        }
+                    }
+                    else if (container.UnmappedButtonName == "LEFT" || container.UnmappedButtonName == "RIGHT")
+                    {
+                        foreach (var vector in _buttonContainers["leftright_violation"].PressedVectors)
+                        {
+                            container.IllegalInputRects.Add(new Rectangle(currX + 2 + RECT_OFFSET + 1, currY - 15 - (int)vector.X - (int)vector.Y, RECT_HEIGHT, (int)vector.Y));
+                        }
+                    }
                 }
             }
         }
@@ -354,6 +424,10 @@ namespace InputVisualizer.VisualizationEngines
             _visibleContainers.Clear();
             foreach (var kvp in gameState.ButtonStates)
             {
+                if (kvp.Value.IsViolationStateHistory)
+                {
+                    continue;
+                }
                 var container = _buttonContainers[kvp.Key];
                 if (container == null)
                 {
@@ -411,6 +485,10 @@ namespace InputVisualizer.VisualizationEngines
 
             foreach (var kvp in gameState.ButtonStates)
             {
+                if (kvp.Value.IsViolationStateHistory)
+                {
+                    continue;
+                }
                 var container = _buttonContainers[kvp.Key];
                 if (_visibleContainers.Contains(container))
                 {
@@ -439,11 +517,13 @@ namespace InputVisualizer.VisualizationEngines
 
         private void BuildContainerPressedVectors(RectangleContainer container, ButtonStateHistory stateHistory, int lineLength, GameState gameState)
         {
-            var lineStart = DateTime.Now;
+            var lineStart = gameState.CurrentTimeStamp;
+            var minAge = gameState.MinAge;
 
             container.PressedVectors.Clear();
+            container.IllegalInputRects.Clear();
             container.PressedRects.Clear();
-
+            
             var changes = stateHistory.GetCurrentStateHistory();
             for (var i = changes.Length - 1; i >= 0; i--)
             {
@@ -454,30 +534,22 @@ namespace InputVisualizer.VisualizationEngines
 
                 var endTime = changes[i].EndTime == DateTime.MinValue ? lineStart : changes[i].EndTime;
 
-                if (endTime < gameState.MinAge)
+                if (endTime <= minAge)
                 {
                     break;
                 }
 
-                var xOffset = (lineStart - endTime).TotalMilliseconds * gameState.PixelsPerMs;
-                var startTime = changes[i].StartTime < gameState.MinAge ? gameState.MinAge : changes[i].StartTime;
+                var startTime = changes[i].StartTime < minAge ? minAge : changes[i].StartTime;
                 var lengthInMs = (endTime - startTime).TotalMilliseconds;
-                var lengthInPixels = (lengthInMs * gameState.PixelsPerMs);
-                if (lengthInPixels < 1)
+                var length = lengthInMs * gameState.PixelsPerMs;
+                var x = (lineStart - endTime).TotalMilliseconds * gameState.PixelsPerMs;
+                var vector = new Vector2((float)Math.Floor(x), (float)Math.Ceiling(length));
+                var overflow = vector.Y - lineLength;
+                if (overflow > 0)
                 {
-                    lengthInPixels = 1;
+                    vector.X -= (overflow - 1);
+                    vector.Y = lineLength;
                 }
-
-                var x = Math.Floor(xOffset);
-                var width = lengthInPixels;
-
-                if (x + width >= lineLength)
-                {
-                    var overflow = (x + width) - lineLength;
-                    width -= overflow;
-                }
-
-                var vector = new Vector2((int)Math.Floor(x), (int)Math.Floor(width) + 1);
                 container.PressedVectors.Add(vector);
             }
         }

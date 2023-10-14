@@ -14,16 +14,46 @@ namespace InputVisualizer.RetroSpyStateHandlers
 
         public virtual void ProcessControllerState(ControllerStateEventArgs e)
         {
+            var dpadState = new DPadState();
+            var timeStamp = _gameState.CurrentTimeStamp;
+
             foreach (var button in e.Buttons)
             {
-                if (_gameState.ButtonStates.ContainsKey(button.Key))
+                if (!_gameState.ButtonStates.ContainsKey(button.Key))
                 {
-                    if (_gameState.ButtonStates[button.Key].IsPressed() != button.Value)
-                    {
-                        _gameState.ButtonStates[button.Key].AddStateChange(button.Value, DateTime.Now);
-                    }
+                    continue;
+                }
+
+                if (_gameState.ButtonStates[button.Key].IsPressed() != button.Value)
+                {
+                    _gameState.ButtonStates[button.Key].AddStateChange(button.Value, timeStamp);
+                }
+
+                switch (button.Key)
+                {
+                    case "UP":
+                        {
+                            dpadState.Up = button.Value;
+                            break;
+                        }
+                    case "DOWN":
+                        {
+                            dpadState.Down = button.Value;
+                            break;
+                        }
+                    case "LEFT":
+                        {
+                            dpadState.Left = button.Value;
+                            break;
+                        }
+                    case "RIGHT":
+                        {
+                            dpadState.Right = button.Value;
+                            break;
+                        }
                 }
             }
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
         }
     }
 }

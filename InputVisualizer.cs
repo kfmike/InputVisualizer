@@ -163,6 +163,7 @@ namespace InputVisualizer
         private void UI_DisplaySettingsUpdated(object sender, EventArgs e)
         {
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
+            _gameState.DisplayIllegalInputs = _config.DisplayConfig.DisplayIllegalInputs;
             SetCurrentLayout();
             _config.Save();
         }
@@ -216,6 +217,7 @@ namespace InputVisualizer
                 _config.CurrentInputSource = "keyboard";
             }
             _gameState.UpdateSpeed(_config.DisplayConfig.Speed);
+            _gameState.DisplayIllegalInputs = _config.DisplayConfig.DisplayIllegalInputs;
             _config.Save();
         }
 
@@ -260,7 +262,7 @@ namespace InputVisualizer
 
         private void SetCurrentLayout()
         {
-            _rectangleEngine.UpdateContainerSettings(_config.DisplayConfig.MaxContainers, _config.DisplayConfig.EmptyContainerColor);
+            _rectangleEngine.UpdateContainerSettings(_config.DisplayConfig.MaxContainers, _config.DisplayConfig.EmptyContainerColor, _config.DisplayConfig.IllegalInputColor);
             switch (_config.DisplayConfig.Layout)
             {
                 case DisplayLayoutStyle.Horizontal:
@@ -550,6 +552,9 @@ namespace InputVisualizer
                     }
             }
 
+            _gameState.ButtonStates.Add("updown_violation", new ButtonStateHistory() { IsViolationStateHistory = true, Color = Color.Red });
+            _gameState.ButtonStates.Add("leftright_violation", new ButtonStateHistory() { IsViolationStateHistory = true, Color = Color.Red });
+
             _gameState.CurrentLayout?.Clear(_gameState);
             _gameState.FrequencyDict.Clear();
 
@@ -666,6 +671,8 @@ namespace InputVisualizer
 
         protected override void Update(GameTime gameTime)
         {
+            _gameState.CurrentTimeStamp = DateTime.Now;
+
             if (_ui.ListeningForInput)
             {
                 _ui.CheckForListeningInput();
@@ -683,7 +690,7 @@ namespace InputVisualizer
 
                 foreach (var button in _gameState.ButtonStates)
                 {
-                    _gameState.FrequencyDict[button.Key] = button.Value.GetPressedLastSecond();
+                    _gameState.FrequencyDict[button.Key] = button.Value.GetPressedLastSecond(_gameState.CurrentTimeStamp);
                 }
 
                 _gameState.UpdateMinAge(_config.DisplayConfig.LineLength);
@@ -694,9 +701,15 @@ namespace InputVisualizer
 
         private void ReadUsb2SnesInputs()
         {
-            var timeStamp = DateTime.Now;
+            var timeStamp = _gameState.CurrentTimeStamp;
+            var dpadState = new DPadState();
+
             foreach (var button in _gameState.ButtonStates)
             {
+                if( button.Value.IsViolationStateHistory )
+                {
+                    continue;
+                }
                 var pressed = false;
 
                 switch (button.Key)
@@ -704,21 +717,25 @@ namespace InputVisualizer
                     case "UP":
                         {
                             pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Up];
+                            dpadState.Up = pressed;
                             break;
                         }
                     case "DOWN":
                         {
                             pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Down];
+                            dpadState.Down = pressed;
                             break;
                         }
                     case "LEFT":
                         {
                             pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Left];
+                            dpadState.Left = pressed;
                             break;
                         }
                     case "RIGHT":
                         {
                             pressed = _usb2snesClient.ButtonStates2[Usb2SnesButtonFlags2.Right];
+                            dpadState.Right = pressed;
                             break;
                         }
                     case "SELECT":
@@ -767,15 +784,17 @@ namespace InputVisualizer
                     _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
                 }
             }
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
         }
 
         private void ReadGamepadInputs()
         {
+            var timeStamp = _gameState.CurrentTimeStamp;
             var keyboardState = Keyboard.GetState();
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex);
             var analogDpadState = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
-            var timeStamp = DateTime.Now;
             var gamepad = _gameState.ActiveGamepadConfig;
+            var dpadState = new DPadState();
 
             if (gamepad == null)
             {
@@ -784,6 +803,10 @@ namespace InputVisualizer
 
             foreach (var button in _gameState.ButtonStates)
             {
+                if( button.Value.IsViolationStateHistory)
+                {
+                    continue;
+                }
                 bool pressed = false;
 
                 if (button.Value.MappingType == ButtonMappingType.Key)
@@ -804,6 +827,31 @@ namespace InputVisualizer
                             _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
                         }
                     }
+
+                    switch (button.Key)
+                    {
+                        case "Up":
+                            {
+                                dpadState.Up = pressed;
+                                break;
+                            }
+                        case "Down":
+                            {
+                                dpadState.Down = pressed;
+                                break;
+                            }
+                        case "Left":
+                            {
+                                dpadState.Left = pressed;
+                                break;
+                            }
+                        case "Right":
+                            {
+                                dpadState.Right = pressed;
+                                break;
+                            }
+                    }
+
                     continue;
                 }
 
@@ -893,7 +941,33 @@ namespace InputVisualizer
                 {
                     _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
                 }
+
+                switch (button.Value.UnmappedButtonType)
+                {
+                    case ButtonType.UP:
+                        {
+                            dpadState.Up = pressed;
+                            break;
+                        }
+                    case ButtonType.DOWN:
+                        {
+                            dpadState.Down = pressed;
+                            break;
+                        }
+                    case ButtonType.LEFT:
+                        {
+                            dpadState.Left = pressed;
+                            break;
+                        }
+                    case ButtonType.RIGHT:
+                        {
+                            dpadState.Right = pressed;
+                            break;
+                        }
+                }
             }
+
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
         }
 
         protected override void Draw(GameTime gameTime)

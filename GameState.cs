@@ -22,6 +22,8 @@ namespace InputVisualizer
         private Timer _purgeTimer = null;
         private float _currentPurgeDelay = 0f;
         public float AnalogStickDeadZoneTolerance = 0.2f;
+        public bool DisplayIllegalInputs { get; set; }
+        public DateTime CurrentTimeStamp { get; set; } = DateTime.Now;
 
         public GameState()
         {
@@ -38,8 +40,8 @@ namespace InputVisualizer
             }
             _purgeTimer = new Timer(500);
             _purgeTimer.Elapsed += OnPurgeTimerElapsed;
-            _purgeTimer.AutoReset = true;
-            _purgeTimer.Enabled = true;
+            _purgeTimer.AutoReset = false;
+            _purgeTimer.Start();
         }
 
         private void OnPurgeTimerElapsed(object sender, ElapsedEventArgs e)
@@ -48,17 +50,38 @@ namespace InputVisualizer
             {
                 button.RemoveOldStateChanges(LineMilliseconds + _currentPurgeDelay + 500);
             }
+            _purgeTimer.Start();
         }
 
         public void UpdateMinAge(int currentLineLength)
         {
             LineMilliseconds = currentLineLength / PixelsPerMs;
-            MinAge = DateTime.Now.AddMilliseconds(-LineMilliseconds);
+            MinAge = CurrentTimeStamp.AddMilliseconds(-LineMilliseconds);
         }
 
         public void UpdateSpeed(float currentSpeed)
         {
             PixelsPerMs = 0.05f * currentSpeed;
+        }
+
+        public void ProcessIllegalDpadStates( DPadState dPadState, DateTime timeStamp )
+        {
+            if( !DisplayIllegalInputs )
+            {
+                return;
+            }
+
+            var upDownPressed = ButtonStates["updown_violation"].IsPressed();
+            var leftRightPressed = ButtonStates["leftright_violation"].IsPressed();
+
+            if(  upDownPressed != (dPadState.Up && dPadState.Down ) )
+            {
+                ButtonStates["updown_violation"].AddStateChange(dPadState.Up && dPadState.Down, timeStamp);
+            }
+            if (leftRightPressed != (dPadState.Left && dPadState.Right))
+            {
+                ButtonStates["leftright_violation"].AddStateChange(dPadState.Left && dPadState.Right, timeStamp);
+            }
         }
     }
 }

@@ -109,6 +109,18 @@
 /processorParam:TextureFormat=Color
 /build:empty_button.png;empty_button
 
+#begin illegal_input.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:illegal_input.png;illegal_input
+
 #begin l1_button.png
 /importer:TextureImporter
 /processor:TextureProcessor
