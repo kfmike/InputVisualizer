@@ -1286,7 +1286,7 @@ namespace InputVisualizer.UI
                 {
                     _config.DisplayConfig.MaxContainers = maxContainers;
                 }
-                _config.DisplayConfig.Speed = displaySpeedSpin.Value;
+                _config.DisplayConfig.Speed = (float)Math.Round(displaySpeedSpin.Value);
                 _config.DisplayConfig.TurnOffLineSpeed = turnOffLineSpeedSpin.Value * 50.0f;
                 _config.DisplayConfig.DisplayDuration = displayDurationCheck.IsChecked;
                 _config.DisplayConfig.DisplayFrequency = displayFrequencyCheck.IsChecked;
