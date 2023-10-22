@@ -15,7 +15,7 @@ namespace InputVisualizer.Config
         public float Speed { get; set; } = 4;
         public int LineLength { get; set; } = 150;
         public float TurnOffLineSpeed { get; set; } = 200;
-        public int MaxContainers { get; set; } = 4;
+        public int MaxContainers { get; set; } = 0;
         public Color EmptyContainerColor { get; set; } = Color.PapayaWhip;
         public Color IllegalInputColor {  get; set; } = Color.Red;
         public bool DisplayIllegalInputs { get; set; } = false;
