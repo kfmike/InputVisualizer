@@ -743,7 +743,9 @@ namespace InputVisualizer
                     {
                         Color = mapping.Color,
                         UnmappedButtonType = mapping.ButtonType,
-                        JoystickHatIndex = mapping.JoystickHatIndex
+                        JoystickHatIndex = mapping.JoystickHatIndex,
+                        JoystickAxisIndex = mapping.JoystickAxisIndex,
+                        JoystickAxisDirectionIsNegative = mapping.JoystickAxisDirectionIsNegative
                     });
                 }
             }
@@ -1093,6 +1095,8 @@ namespace InputVisualizer
 
                 bool pressed = false;
                 var hatIndex = button.Value.JoystickHatIndex;
+                var axisIndex = button.Value.JoystickAxisIndex;
+                var axisDirectionIsNegative = button.Value.JoystickAxisDirectionIsNegative;
                 if (hatIndex > -1 && hatIndex < state.Hats.Length)
                 {
                     switch (button.Value.UnmappedButtonType)
@@ -1121,6 +1125,40 @@ namespace InputVisualizer
                                 dpadState.Right = pressed;
                                 break;
                             }
+                    }
+                }
+                else if( axisIndex > - 1 && axisIndex < state.Axes.Length)
+                {
+                    var value = state.Axes[axisIndex];
+                    if( (axisDirectionIsNegative && value < 0) || (!axisDirectionIsNegative && value > 0) )
+                    {
+                        pressed = Math.Abs(value) > _gameState.DirectInputDeadZoneTolerance;
+                        if (pressed)
+                        {
+                            switch (button.Value.UnmappedButtonType)
+                            {
+                                case ButtonType.UP:
+                                    {
+                                        dpadState.Up = pressed;
+                                        break;
+                                    }
+                                case ButtonType.DOWN:
+                                    {
+                                        dpadState.Down = pressed;
+                                        break;
+                                    }
+                                case ButtonType.LEFT:
+                                    {
+                                        dpadState.Left = pressed;
+                                        break;
+                                    }
+                                case ButtonType.RIGHT:
+                                    {
+                                        dpadState.Right = pressed;
+                                        break;
+                                    }
+                            }
+                        }
                     }
                 }
                 else

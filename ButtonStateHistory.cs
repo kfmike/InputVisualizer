@@ -14,6 +14,8 @@ namespace InputVisualizer
         public ButtonMappingType MappingType { get; set; }
         public ButtonType UnmappedButtonType { get; set; }
         public int JoystickHatIndex { get; set; }
+        public int JoystickAxisIndex { get; set; }
+        public bool JoystickAxisDirectionIsNegative { get; set; }
         public Keys MappedKey { get; set; }
         public int StateChangeCount { get; private set; }
         public DateTime LastActiveCompletedTime { get; set; } = DateTime.MinValue;

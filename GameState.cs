@@ -24,6 +24,7 @@ namespace InputVisualizer
         private Timer _purgeTimer = null;
         private float _currentPurgeDelay = 0f;
         public float AnalogStickDeadZoneTolerance = 0.2f;
+        public float DirectInputDeadZoneTolerance = 15500;
         public bool DisplayIllegalInputs { get; set; }
         public DateTime CurrentTimeStamp { get; set; } = DateTime.Now;
 
