@@ -13,6 +13,7 @@ namespace InputVisualizer
         private readonly object _modifyLock = new();
         public ButtonMappingType MappingType { get; set; }
         public ButtonType UnmappedButtonType { get; set; }
+        public int JoystickHatIndex { get; set; }
         public Keys MappedKey { get; set; }
         public int StateChangeCount { get; private set; }
         public DateTime LastActiveCompletedTime { get; set; } = DateTime.MinValue;

@@ -56,11 +56,11 @@ namespace InputVisualizer.UI
             _gameState = gameState;
         }
 
-        public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
+        public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads, Dictionary<string, SystemJoyStickInfo> systemJoysticks, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
         {
             _mainMenuContainer = new HorizontalStackPanel();
 
-            UpdateMainMenu(systemGamepads, usb2SnesDevices, usb2SnesGameList);
+            UpdateMainMenu(systemGamepads, systemJoysticks, usb2SnesDevices, usb2SnesGameList);
 
             _desktop = new Desktop
             {
@@ -70,7 +70,7 @@ namespace InputVisualizer.UI
             _desktop.Root.HorizontalAlignment = HorizontalAlignment.Left;
         }
 
-        public void UpdateMainMenu(Dictionary<string, SystemGamePadInfo> systemGamepads, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
+        public void UpdateMainMenu(Dictionary<string, SystemGamePadInfo> systemGamepads, Dictionary<string, SystemJoyStickInfo> systemJoysticks, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
         {
             _mainMenuContainer.Widgets.Clear();
 
@@ -109,6 +109,11 @@ namespace InputVisualizer.UI
             };
 
             foreach (var kvp in systemGamepads)
+            {
+                var name = kvp.Value.Name.Length > 32 ? kvp.Value.Name.Substring(0, 32) : kvp.Value.Name;
+                inputSourceCombo.Items.Add(new ListItem(name, Color.White, kvp.Key));
+            }
+            foreach (var kvp in systemJoysticks)
             {
                 var name = kvp.Value.Name.Length > 32 ? kvp.Value.Name.Substring(0, 32) : kvp.Value.Name;
                 inputSourceCombo.Items.Add(new ListItem(name, Color.White, kvp.Key));
@@ -161,9 +166,13 @@ namespace InputVisualizer.UI
                 {
                     ShowConfigureMisterDialog();
                 }
-                else if (_gameState.CurrentInputMode == InputMode.Gamepad)
+                else if (_gameState.CurrentInputMode == InputMode.XInputOrKeyboard)
                 {
                     ShowConfigureGamePadDialog(systemGamepads);
+                }
+                else if (_gameState.CurrentInputMode == InputMode.DirectInput)
+                {
+                    ShowConfigureJoystickDialog(systemJoysticks);
                 }
                 else
                 {
@@ -250,6 +259,11 @@ namespace InputVisualizer.UI
 
         public void CheckForListeningInput()
         {
+            if (_gameState.CurrentInputMode == InputMode.DirectInput)
+            {
+                CheckForDirectInputListeningInput();
+                return;
+            }
             var keyboardState = Keyboard.GetState();
             if (keyboardState.IsKeyDown(Keys.Escape))
             {
@@ -259,7 +273,7 @@ namespace InputVisualizer.UI
                 return;
             }
 
-            if (_gameState.CurrentInputMode != InputMode.Gamepad)
+            if (_gameState.CurrentInputMode != InputMode.XInputOrKeyboard)
             {
                 return;
             }
@@ -397,6 +411,93 @@ namespace InputVisualizer.UI
                         if (textBox != null)
                         {
                             textBox.Text = mapping.MappedKey.ToString();
+                        }
+                    }
+                }
+                _listeningForInput = false;
+            }
+        }
+
+        public void CheckForDirectInputListeningInput()
+        {
+            var buttonDetected = ButtonType.NONE;
+            var state = Joystick.GetState(_gameState.CurrentJoystickIndex);
+            var activeConfig = _gameState.ActiveJoystickConfig;
+
+            var keyboardState = Keyboard.GetState();
+            if (keyboardState.IsKeyDown(Keys.Escape))
+            {
+                _listeningForInput = false;
+                _listeningCancelPressed = true;
+                _listeningButton.Text = _originalListeningButtonText;
+                return;
+            }
+
+            var hatIndex = -1;
+            for( var i = 0; i < state.Hats.Length; i++ )
+            {
+                if (state.Hats[i].Up == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.UP;
+                }
+                else if (state.Hats[i].Down == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.DOWN;
+                }
+                else if (state.Hats[i].Left == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.LEFT;
+                }
+                else if (state.Hats[i].Right == ButtonState.Pressed)
+                {
+                    buttonDetected = ButtonType.RIGHT;
+                }
+
+                if( buttonDetected != ButtonType.NONE )
+                {
+                    hatIndex = i;
+                    break;
+                }
+            }
+            
+
+            if (buttonDetected == ButtonType.NONE)
+            {
+                for (var i = 0; i < state.Buttons.Length; i++)
+                {
+                    if (state.Buttons[i] == ButtonState.Pressed)
+                    {
+                        buttonDetected = (ButtonType)Enum.Parse(typeof(ButtonType), $"B{i}");
+                        break;
+                    }
+                }
+            }
+
+            if (buttonDetected != ButtonType.NONE)
+            {
+                _listeningMapping.MappingType = ButtonMappingType.Button;
+                _listeningMapping.MappedButtonType = buttonDetected;
+                _listeningMapping.MappedKey = Keys.None;
+                _listeningMapping.JoystickHatIndex = hatIndex;
+                
+                var buttonText = buttonDetected.ToString() + " Button";
+                buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
+                _listeningButton.Text = buttonText;
+
+                foreach (var mapping in activeConfig.ButtonMappingSet.ButtonMappings)
+                {
+                    if (mapping == _listeningMapping)
+                    {
+                        continue;
+                    }
+                    if (mapping.MappedButtonType == buttonDetected)
+                    {
+                        mapping.MappedButtonType = ButtonType.NONE;
+                        mapping.JoystickHatIndex = -1;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if (textBox != null)
+                        {
+                            textBox.Text = mapping.MappedButtonType.ToString();
                         }
                     }
                 }
@@ -726,6 +827,101 @@ namespace InputVisualizer.UI
             dialog.ShowModal(_desktop);
         }
 
+        private void ShowConfigureJoystickDialog(Dictionary<string, SystemJoyStickInfo> systemJoysticks)
+        {
+            var buttonMapWidgets = new List<Widget>();
+
+            var joystickName = systemJoysticks[_gameState.ActiveJoystickConfig.Id].Name;
+            var name = joystickName.Length > 32 ? joystickName.Substring(0, 32) : joystickName;
+            var dialog = new Dialog
+            {
+                Title = $"{name} Config",
+                TitleTextColor = Color.DarkSeaGreen
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
+            grid.Widgets.Add(styleLabel);
+
+            var styleCombo = CreateComboBox(0, 3, 1, 3);
+            foreach (GamepadStyle value in Enum.GetValues(typeof(GamepadStyle)))
+            {
+                var item = new ListItem(value.GetDescription(), Color.White, value);
+                styleCombo.Items.Add(item);
+                if (_gameState.ActiveJoystickConfig.Style == value)
+                {
+                    styleCombo.SelectedItem = item;
+                }
+            }
+            styleCombo.SelectedIndexChanged += (o, e) =>
+            {
+                _gameState.ActiveJoystickConfig.Style = (GamepadStyle)styleCombo.SelectedItem.Tag;
+                _gameState.ActiveJoystickConfig.GenerateButtonMappings();
+                DrawButtonMappings(_gameState.ActiveJoystickConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
+            };
+            grid.Widgets.Add(styleCombo);
+
+            var visibleLabel = CreateLabel("Visible", 2, 0, 1, 1);
+            var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
+            var mappedToLabel = CreateLabel("Mapped To", 2, 2, 1, 1);
+            var colorLabel = CreateLabel("Color", 2, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 4, 1, 2);
+            orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            grid.Widgets.Add(visibleLabel);
+            grid.Widgets.Add(buttonLabel);
+            grid.Widgets.Add(mappedToLabel);
+            grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(orderLabel);
+
+            DrawButtonMappings(_gameState.ActiveJoystickConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
+
+            dialog.Content = grid;
+            dialog.ConfirmKey = Keys.None;
+            dialog.CloseKey = Keys.None;
+            dialog.ButtonCancel.Visible = false;
+            dialog.Closing += (s, a) =>
+            {
+                if (_listeningForInput)
+                {
+                    var messageBox = Dialog.CreateMessageBox("Button Mapping", "Finish mapping button or hit ESC to cancel");
+                    messageBox.ShowModal(_desktop);
+                    a.Cancel = true;
+                }
+                else if (_listeningCancelPressed)
+                {
+                    a.Cancel = true;
+                    _listeningCancelPressed = false;
+                }
+            };
+            dialog.Closed += (s, a) =>
+            {
+                _listeningForInput = false;
+                if (!dialog.Result)
+                {
+                    return;
+                }
+
+                GamepadSettingsUpdated?.Invoke(this, EventArgs.Empty);
+            };
+            dialog.ShowModal(_desktop);
+        }
+
         private void ShowConfigureRetroSpyDialog()
         {
             var buttonMapWidgets = new List<Widget>();
@@ -912,7 +1108,7 @@ namespace InputVisualizer.UI
                 if (showMapButton)
                 {
                     var listenPrompt = "Press Button";
-                    if (_gameState.CurrentInputMode == InputMode.Gamepad && _gameState.ActiveGamepadConfig != null)
+                    if (_gameState.CurrentInputMode == InputMode.XInputOrKeyboard && _gameState.ActiveGamepadConfig != null)
                     {
                         listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button/Key...";
                     }
@@ -1249,7 +1445,7 @@ namespace InputVisualizer.UI
                 IsChecked = _config.DisplayConfig.DisplayFrequency,
             };
             grid.Widgets.Add(displayFrequencyCheck);
-             
+
             var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 15, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(illegalInputsLabel);
             var illegalInputsEnabledLabel = CreateLabel("Enabled", 15, 3, 1, 1);

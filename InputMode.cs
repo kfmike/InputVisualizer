@@ -4,7 +4,8 @@ namespace InputVisualizer
     public enum InputMode
     {
         None = 0,
-        Gamepad,
+        XInputOrKeyboard,
+        DirectInput,
         RetroSpy,
         Usb2Snes,
         MiSTer

@@ -10,8 +10,10 @@ namespace InputVisualizer
     public class GameState
     {
         public GamepadConfig ActiveGamepadConfig { get; set; } = null;
-        public InputMode CurrentInputMode { get; set; } = InputMode.Gamepad;
+        public JoystickConfig ActiveJoystickConfig { get; set; } = null;
+        public InputMode CurrentInputMode { get; set; } = InputMode.XInputOrKeyboard;
         public PlayerIndex CurrentPlayerIndex { get; set; } = PlayerIndex.One;
+        public int CurrentJoystickIndex { get; set; }
         public DateTime MinAge { get; set; }
         public bool ConnectedToMister { get; set; } = false;
         public VisualizerEngine CurrentLayout { get; set; }
