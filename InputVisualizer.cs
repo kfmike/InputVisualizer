@@ -224,10 +224,13 @@ namespace InputVisualizer
             }
 
             _joystickButtonIndexLookup.Clear();
-            var maxButtons = _systemJoysticks.Values.Max(j => j.NumButtons);
-            for (var i = 0; i < maxButtons; i++)
+            if (_systemJoysticks.Any())
             {
-                _joystickButtonIndexLookup.Add($"B{i}", i);
+                var maxButtons = _systemJoysticks.Values.Max(j => j.NumButtons);
+                for (var i = 0; i < maxButtons; i++)
+                {
+                    _joystickButtonIndexLookup.Add($"B{i}", i);
+                }
             }
         }
 
