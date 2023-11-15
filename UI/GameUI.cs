@@ -1245,7 +1245,7 @@ namespace InputVisualizer.UI
             var aboutLabels = new List<Label>
             {
                 CreateLabel("Version:", 0, 0, 1, 1),
-                CreateLabel("1.5", 0, 1, 1, 1),
+                CreateLabel("1.6.0", 0, 1, 1, 1),
                 CreateLabel("Author:", 1, 0, 1, 1),
                 CreateLabel("KungFusedMike", 1, 1, 1, 1),
                 CreateLabel("Email:", 2, 0, 1, 1),
