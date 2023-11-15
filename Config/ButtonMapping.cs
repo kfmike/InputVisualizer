@@ -12,5 +12,6 @@ namespace InputVisualizer.Config
         public Color Color { get; set; }
         public bool IsVisible { get; set; } = true;
         public int Order { get; set; }
+        public int JoystickHatIndex { get; set; } = -1;
     }
 }

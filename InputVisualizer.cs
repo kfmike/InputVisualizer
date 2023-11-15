@@ -15,6 +15,7 @@ using InputVisualizer.Usb2Snes;
 using System.Threading.Tasks;
 using InputVisualizer.RetroSpyStateHandlers;
 using InputVisualizer.VisualizationEngines;
+using FontStashSharp;
 
 namespace InputVisualizer
 {
@@ -36,6 +37,9 @@ namespace InputVisualizer
 
         private RectangleEngine _rectangleEngine = new RectangleEngine();
         private Dictionary<string, SystemGamePadInfo> _systemGamePads = new Dictionary<string, SystemGamePadInfo>();
+        private Dictionary<string, SystemJoyStickInfo> _systemJoysticks = new Dictionary<string, SystemJoyStickInfo>();
+        private Dictionary<string, int> _joystickButtonIndexLookup = new Dictionary<string, int>();
+        private bool _drawNoButtonsMappedWarning;
 
         private const int DEFAULT_SCREEN_WIDTH = 1024;
         private const int DEFAULT_SCREEN_HEIGHT = 768;
@@ -91,7 +95,7 @@ namespace InputVisualizer
             _ui.MisterSettingsUpdated += UI_MisterSettingsUpdated;
             _ui.MisterConnectionRequested += UI_MisterConnectionRequested;
             _ui.RefreshInputSources += UI_RefreshInputSources;
-            _ui.Init(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
+            _ui.Init(_systemGamePads, _systemJoysticks, _usb2snesClient.Devices, _usb2SnesGameList);
         }
 
         private async void UI_RefreshInputSources(object sender, EventArgs e)
@@ -100,7 +104,7 @@ namespace InputVisualizer
             CloseCurrentInputMode();
             InitGamepads();
             await RefreshUsb2SnesDeviceList();
-            _ui.UpdateMainMenu(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
+            _ui.UpdateMainMenu(_systemGamePads, _systemJoysticks, _usb2snesClient.Devices, _usb2SnesGameList);
             await InitInputSource();
             _ui.HideWaitMessage();
         }
@@ -156,7 +160,7 @@ namespace InputVisualizer
             {
                 CloseCurrentInputMode();
                 _ui.UpdateMisterConfigureInputUI();
-                _ui.UpdateMainMenu(_systemGamePads, _usb2snesClient.Devices, _usb2SnesGameList);
+                _ui.UpdateMainMenu(_systemGamePads, _systemJoysticks, _usb2snesClient.Devices, _usb2SnesGameList);
             }
         }
 
@@ -191,6 +195,39 @@ namespace InputVisualizer
                         PlayerIndex = i
                     });
                 }
+            }
+
+            _systemJoysticks.Clear();
+            if (!Joystick.IsSupported)
+            {
+                return;
+            }
+            for (var i = Joystick.LastConnectedIndex; i >= 0; i--)
+            {
+                var state = Joystick.GetState(i);
+                if (state.IsConnected)
+                {
+                    var caps = Joystick.GetCapabilities(i);
+                    if (_systemGamePads.ContainsKey(caps.Identifier) || _systemJoysticks.ContainsKey(caps.Identifier))
+                    {
+                        continue;
+                    }
+
+                    _systemJoysticks.Add(caps.Identifier, new SystemJoyStickInfo
+                    {
+                        Id = caps.Identifier,
+                        Name = caps.DisplayName,
+                        Index = i,
+                        NumButtons = caps.ButtonCount
+                    });
+                }
+            }
+
+            _joystickButtonIndexLookup.Clear();
+            var maxButtons = _systemJoysticks.Values.Max(j => j.NumButtons);
+            for (var i = 0; i < maxButtons; i++)
+            {
+                _joystickButtonIndexLookup.Add($"B{i}", i);
             }
         }
 
@@ -247,6 +284,18 @@ namespace InputVisualizer
                     gamepadConfig.GenerateButtonMappings();
                 }
             }
+            foreach (var kvp in _systemJoysticks)
+            {
+                var joystickConfig = _config.JoystickConfigs.FirstOrDefault(g => g.Id == kvp.Key);
+                if (joystickConfig == null)
+                {
+                    joystickConfig = _config.CreateJoystickConfig(kvp.Key, GamepadStyle.XBOX);
+                }
+                if (!joystickConfig.ButtonMappingSet.ButtonMappings.Any())
+                {
+                    joystickConfig.GenerateButtonMappings();
+                }
+            }
             var keyboardConfig = _config.GamepadConfigs.FirstOrDefault(g => g.Id == "keyboard");
             if (keyboardConfig == null)
             {
@@ -289,7 +338,15 @@ namespace InputVisualizer
 
         private void SetCurrentInputMode()
         {
-            if (string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase))
+            if (string.IsNullOrEmpty(_config.CurrentInputSource) || _systemGamePads.ContainsKey(_config.CurrentInputSource))
+            {
+                _gameState.CurrentInputMode = InputMode.XInputOrKeyboard;
+            }
+            else if (_systemJoysticks.ContainsKey(_config.CurrentInputSource))
+            {
+                _gameState.CurrentInputMode = InputMode.DirectInput;
+            }
+            else if (string.Equals(_config.CurrentInputSource, "spy", StringComparison.InvariantCultureIgnoreCase))
             {
                 _gameState.CurrentInputMode = InputMode.RetroSpy;
             }
@@ -306,7 +363,7 @@ namespace InputVisualizer
                 }
                 else
                 {
-                    _gameState.CurrentInputMode = InputMode.Gamepad;
+                    _gameState.CurrentInputMode = InputMode.XInputOrKeyboard;
                 }
             }
         }
@@ -327,9 +384,14 @@ namespace InputVisualizer
                         await InitUsb2SnesInputSource();
                         break;
                     }
-                case InputMode.Gamepad:
+                case InputMode.XInputOrKeyboard:
                     {
                         InitGamepadInputSource();
+                        break;
+                    }
+                case InputMode.DirectInput:
+                    {
+                        InitJoystickInputSource();
                         break;
                     }
             }
@@ -502,7 +564,7 @@ namespace InputVisualizer
                 return;
             }
 
-            if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.Keys.Contains(_config.CurrentInputSource))
+            if (string.IsNullOrEmpty(_config.CurrentInputSource) || !_systemGamePads.ContainsKey(_config.CurrentInputSource))
             {
                 if (_config.GamepadConfigs.Any())
                 {
@@ -527,6 +589,16 @@ namespace InputVisualizer
             }
         }
 
+        private void InitJoystickInputSource()
+        {
+            _gameState.ActiveJoystickConfig = _config.JoystickConfigs.FirstOrDefault(c => c.Id == _config.CurrentInputSource);
+            if (_gameState.ActiveJoystickConfig != null)
+            {
+                _gameState.CurrentJoystickIndex = _systemJoysticks[_gameState.ActiveJoystickConfig.Id].Index;
+
+            }
+        }
+
         private void InitButtons()
         {
             switch (_gameState.CurrentInputMode)
@@ -536,9 +608,14 @@ namespace InputVisualizer
                         InitRetroSpyButtons();
                         break;
                     }
-                case InputMode.Gamepad:
+                case InputMode.XInputOrKeyboard:
                     {
                         InitGamepadButtons();
+                        break;
+                    }
+                case InputMode.DirectInput:
+                    {
+                        InitJoystickButtons();
                         break;
                     }
                 case InputMode.Usb2Snes:
@@ -552,6 +629,8 @@ namespace InputVisualizer
                         break;
                     }
             }
+
+            _drawNoButtonsMappedWarning = _gameState.ButtonStates.Count <= 0;
 
             _gameState.ButtonStates.Add("updown_violation", new ButtonStateHistory() { IsViolationStateHistory = true, Color = Color.Red });
             _gameState.ButtonStates.Add("leftright_violation", new ButtonStateHistory() { IsViolationStateHistory = true, Color = Color.Red });
@@ -646,6 +725,27 @@ namespace InputVisualizer
             }
         }
 
+        private void InitJoystickButtons()
+        {
+            _gameState.ButtonStates.Clear();
+            if (_gameState.ActiveJoystickConfig == null)
+            {
+                return;
+            }
+            foreach (var mapping in _gameState.ActiveJoystickConfig.ButtonMappingSet.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
+            {
+                if (mapping.MappingType == ButtonMappingType.Button && mapping.MappedButtonType != ButtonType.NONE)
+                {
+                    _gameState.ButtonStates.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory()
+                    {
+                        Color = mapping.Color,
+                        UnmappedButtonType = mapping.ButtonType,
+                        JoystickHatIndex = mapping.JoystickHatIndex
+                    });
+                }
+            }
+        }
+
         private void InitMisterButtons()
         {
             _gameState.ButtonStates.Clear();
@@ -680,9 +780,13 @@ namespace InputVisualizer
             }
             else
             {
-                if (_gameState.CurrentInputMode == InputMode.Gamepad)
+                if (_gameState.CurrentInputMode == InputMode.XInputOrKeyboard)
                 {
                     ReadGamepadInputs();
+                }
+                else if (_gameState.CurrentInputMode == InputMode.DirectInput)
+                {
+                    ReadJoystickInputs();
                 }
                 else if (_gameState.CurrentInputMode == InputMode.Usb2Snes)
                 {
@@ -707,7 +811,7 @@ namespace InputVisualizer
 
             foreach (var button in _gameState.ButtonStates)
             {
-                if( button.Value.IsViolationStateHistory )
+                if (button.Value.IsViolationStateHistory)
                 {
                     continue;
                 }
@@ -804,7 +908,7 @@ namespace InputVisualizer
 
             foreach (var button in _gameState.ButtonStates)
             {
-                if( button.Value.IsViolationStateHistory)
+                if (button.Value.IsViolationStateHistory)
                 {
                     continue;
                 }
@@ -971,11 +1075,73 @@ namespace InputVisualizer
             _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
         }
 
+        private void ReadJoystickInputs()
+        {
+            var timeStamp = _gameState.CurrentTimeStamp;
+            var state = Joystick.GetState(_gameState.CurrentJoystickIndex);
+            var dpadState = new DPadState();
+
+            foreach (var button in _gameState.ButtonStates)
+            {
+                if (button.Value.IsViolationStateHistory)
+                {
+                    continue;
+                }
+
+                bool pressed = false;
+                var hatIndex = button.Value.JoystickHatIndex;
+                if (hatIndex > -1 && hatIndex < state.Hats.Length)
+                {
+                    switch (button.Value.UnmappedButtonType)
+                    {
+                        case ButtonType.UP:
+                            {
+                                pressed = state.Hats[hatIndex].Up == ButtonState.Pressed;
+                                dpadState.Up = pressed;
+                                break;
+                            }
+                        case ButtonType.DOWN:
+                            {
+                                pressed = state.Hats[hatIndex].Down == ButtonState.Pressed;
+                                dpadState.Down = pressed;
+                                break;
+                            }
+                        case ButtonType.LEFT:
+                            {
+                                pressed = state.Hats[hatIndex].Left == ButtonState.Pressed;
+                                dpadState.Left = pressed;
+                                break;
+                            }
+                        case ButtonType.RIGHT:
+                            {
+                                pressed = state.Hats[hatIndex].Right == ButtonState.Pressed;
+                                dpadState.Right = pressed;
+                                break;
+                            }
+                    }
+                }
+                else
+                {
+                    pressed = state.Buttons[_joystickButtonIndexLookup[button.Key]] == ButtonState.Pressed;
+                }
+
+                if (button.Value.IsPressed() != pressed)
+                {
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                }
+            }
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
+        }
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(_config.DisplayConfig.BackgroundColor);
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, _matrix);
             _gameState.CurrentLayout?.Draw(_spriteBatch, _config, _gameState, gameTime, _commonTextures);
+            if (_drawNoButtonsMappedWarning)
+            {
+                _spriteBatch.DrawString(_commonTextures.Font18, "Map buttons from menu", new Vector2(15, 30), Color.DarkSeaGreen);
+            }
             _spriteBatch.End();
             _ui.Render();
             base.Draw(gameTime);
