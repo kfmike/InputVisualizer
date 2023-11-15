@@ -38,6 +38,7 @@ namespace InputVisualizer.UI
         private Dialog _waitMessageBox = null;
 
         public bool ListeningForInput => _listeningForInput;
+        private JoystickState _initialJoystickState;
 
         public event EventHandler<InputSourceChangedEventArgs> InputSourceChanged;
         public event EventHandler GamepadSettingsUpdated;
@@ -459,7 +460,23 @@ namespace InputVisualizer.UI
                     break;
                 }
             }
-            
+
+            var axisIndex = -1;
+            var axisValueIsNegative = false;
+            if(buttonDetected == ButtonType.NONE)
+            {
+                for( var i = 0; i < state.Axes.Length; i++)
+                {
+                    var delta = Math.Abs(state.Axes[i] - _initialJoystickState.Axes[i]);
+                    if (delta > _gameState.DirectInputDeadZoneTolerance )
+                    {
+                        buttonDetected = _listeningMapping.ButtonType;
+                        axisIndex = i;
+                        axisValueIsNegative = state.Axes[i] < 0;
+                        break;
+                    }
+                }
+            }
 
             if (buttonDetected == ButtonType.NONE)
             {
@@ -479,6 +496,8 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
                 _listeningMapping.JoystickHatIndex = hatIndex;
+                _listeningMapping.JoystickAxisIndex = axisIndex;
+                _listeningMapping.JoystickAxisDirectionIsNegative = axisValueIsNegative;
                 
                 var buttonText = buttonDetected.ToString() + " Button";
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
@@ -494,6 +513,8 @@ namespace InputVisualizer.UI
                     {
                         mapping.MappedButtonType = ButtonType.NONE;
                         mapping.JoystickHatIndex = -1;
+                        mapping.JoystickAxisIndex = -1;
+                        mapping.JoystickAxisDirectionIsNegative = false;
                         var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
                         if (textBox != null)
                         {
@@ -1132,6 +1153,10 @@ namespace InputVisualizer.UI
                             messageBox.ShowModal(_desktop);
                             return;
                         }
+                        if (_gameState.CurrentInputMode == InputMode.DirectInput && _gameState.ActiveJoystickConfig != null)
+                        {
+                            _initialJoystickState = Joystick.GetState(_gameState.CurrentJoystickIndex);
+                        }
                         _listeningForInput = true;
                         _listeningButton = mapButton;
                         _originalListeningButtonText = _listeningButton.Text;
@@ -1245,7 +1270,7 @@ namespace InputVisualizer.UI
             var aboutLabels = new List<Label>
             {
                 CreateLabel("Version:", 0, 0, 1, 1),
-                CreateLabel("1.6.0", 0, 1, 1, 1),
+                CreateLabel("1.6.1", 0, 1, 1, 1),
                 CreateLabel("Author:", 1, 0, 1, 1),
                 CreateLabel("KungFusedMike", 1, 1, 1, 1),
                 CreateLabel("Email:", 2, 0, 1, 1),

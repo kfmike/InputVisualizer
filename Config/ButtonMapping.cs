@@ -13,5 +13,7 @@ namespace InputVisualizer.Config
         public bool IsVisible { get; set; } = true;
         public int Order { get; set; }
         public int JoystickHatIndex { get; set; } = -1;
+        public int JoystickAxisIndex { get; set; } = -1;
+        public bool JoystickAxisDirectionIsNegative { get; set; }
     }
 }

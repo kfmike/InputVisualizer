@@ -6,7 +6,6 @@ namespace InputVisualizer.Config
     {
         public string Id { get; set; }
         public GamepadStyle Style { get; set; } = GamepadStyle.NES;
-        public bool UseLStickForDpad { get; set; } = false;
 
         public ButtonMappingSet ButtonMappingSet { get; set; } = new ButtonMappingSet();
 
