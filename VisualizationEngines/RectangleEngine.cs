@@ -169,11 +169,11 @@ namespace InputVisualizer.VisualizationEngines
                 }
                 else
                 {
-                    if (container.ButtonIsCurrentlyPressed && _orientation == RectangeOrientation.Right)
+                    if (container.ButtonIsCurrentlyPressed)
                     {
                         spriteBatch.Draw(textures.Pixel, container.SquareOuterRect, null, container.Color * 0.75f, 0, Vector2.Zero, SpriteEffects.None, 0);
 
-                        if (config.DisplayConfig.DisplayDuration)
+                        if (config.DisplayConfig.DisplayDuration && _orientation == RectangeOrientation.Right)
                         {
                             var elapsed = container.ButtonPressedElapsedTime;
                             if (elapsed.TotalSeconds > config.DisplayConfig.MinDisplayDuration)
