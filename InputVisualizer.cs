@@ -188,6 +188,10 @@ namespace InputVisualizer
                 if (state.IsConnected)
                 {
                     var caps = GamePad.GetCapabilities(i);
+                    if (_systemGamePads.ContainsKey(caps.Identifier))
+                    {
+                        continue;
+                    }
                     _systemGamePads.Add(caps.Identifier, new SystemGamePadInfo
                     {
                         Id = caps.Identifier,
@@ -1127,10 +1131,10 @@ namespace InputVisualizer
                             }
                     }
                 }
-                else if( axisIndex > - 1 && axisIndex < state.Axes.Length)
+                else if (axisIndex > -1 && axisIndex < state.Axes.Length)
                 {
                     var value = state.Axes[axisIndex];
-                    if( (axisDirectionIsNegative && value < 0) || (!axisDirectionIsNegative && value > 0) )
+                    if ((axisDirectionIsNegative && value < 0) || (!axisDirectionIsNegative && value > 0))
                     {
                         pressed = Math.Abs(value) > _gameState.DirectInputDeadZoneTolerance;
                         if (pressed)
