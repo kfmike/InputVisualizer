@@ -9,6 +9,7 @@ namespace InputVisualizer.Config
     {
         public static string CONFIG_PATH = @"config.json";
 
+        public GeneralSettings GeneralSettings { get; set; } = new GeneralSettings();
         public RetroSpyConfig RetroSpyConfig { get; set; } = new RetroSpyConfig();
         public MisterConfig MisterConfig { get; set; } = new MisterConfig();
         public Usb2SnesConfig Usb2SnesConfig { get; set; } = new Usb2SnesConfig();

@@ -66,8 +66,8 @@ namespace InputVisualizer
             _usb2snesClient = new Usb2SnesClient();
 
             InitGamepads();
-            RefreshUsb2SnesDeviceList().GetAwaiter().GetResult();
             LoadConfig();
+            RefreshUsb2SnesDeviceList().GetAwaiter().GetResult();
             InitUI();
             SetCurrentLayout();
             InitInputSource().GetAwaiter().GetResult();
@@ -95,10 +95,16 @@ namespace InputVisualizer
             _ui.MisterSettingsUpdated += UI_MisterSettingsUpdated;
             _ui.MisterConnectionRequested += UI_MisterConnectionRequested;
             _ui.RefreshInputSources += UI_RefreshInputSources;
+            _ui.GeneralSettingsUpdated += UI_GeneralSettingsUpdated;
             _ui.Init(_systemGamePads, _systemJoysticks, _usb2snesClient.Devices, _usb2SnesGameList);
         }
 
         private async void UI_RefreshInputSources(object sender, EventArgs e)
+        {
+            await RefreshInputSources();
+        }
+
+        private async Task RefreshInputSources()
         {
             _ui.ShowWaitMessage("Please Wait", "Refreshing input sources...");
             CloseCurrentInputMode();
@@ -141,6 +147,13 @@ namespace InputVisualizer
         private async void UI_Usb2SnesSettingsUpdated(object sender, EventArgs e)
         {
             _config.Save();
+            await InitInputSource();
+        }
+
+        private async void UI_GeneralSettingsUpdated(object sender, EventArgs e)
+        {
+            _config.Save();
+            await RefreshInputSources();
             await InitInputSource();
         }
 
@@ -240,6 +253,7 @@ namespace InputVisualizer
 
         private async Task RefreshUsb2SnesDeviceList()
         {
+            _usb2snesClient.SetServer(_config.GeneralSettings.Usb2SnesServer, _config.GeneralSettings.Usb2SnesPort);
             await _usb2snesClient.GetDeviceList();
             LoadUsb2SnesGameList();
         }

@@ -47,6 +47,7 @@ namespace InputVisualizer.UI
         public event EventHandler MisterSettingsUpdated;
         public event EventHandler MisterConnectionRequested;
         public event EventHandler DisplaySettingsUpdated;
+        public event EventHandler GeneralSettingsUpdated;
         public event EventHandler<Usb2SnesGameChangedEventArgs> Usb2SnesGameChanged;
         public event EventHandler RefreshInputSources;
 
@@ -154,6 +155,15 @@ namespace InputVisualizer.UI
                 BorderThickness = new Thickness(1),
             };
 
+            var menuItemGeneral = new MenuItem();
+            menuItemGeneral.Text = "General Settings";
+            menuItemGeneral.Id = "menuItemGeneral";
+
+            menuItemGeneral.Selected += (s, a) =>
+            {
+                ShowGeneralSettingsDialog();
+            };
+
             var menuItemInputs = new MenuItem();
             menuItemInputs.Text = "Configure Current Input";
             menuItemInputs.Id = "menuItemInputs";
@@ -210,6 +220,7 @@ namespace InputVisualizer.UI
             var menuItemActions = new MenuItem();
             menuItemActions.Text = "Menu";
             menuItemActions.Id = "menuItemActions";
+            menuItemActions.Items.Add(menuItemGeneral);
             menuItemActions.Items.Add(menuItemInputs);
             menuItemActions.Items.Add(menuItemDisplay);
             menuItemActions.Items.Add(menuItemRefresh);
@@ -435,7 +446,7 @@ namespace InputVisualizer.UI
             }
 
             var hatIndex = -1;
-            for( var i = 0; i < state.Hats.Length; i++ )
+            for (var i = 0; i < state.Hats.Length; i++)
             {
                 if (state.Hats[i].Up == ButtonState.Pressed)
                 {
@@ -454,7 +465,7 @@ namespace InputVisualizer.UI
                     buttonDetected = ButtonType.RIGHT;
                 }
 
-                if( buttonDetected != ButtonType.NONE )
+                if (buttonDetected != ButtonType.NONE)
                 {
                     hatIndex = i;
                     break;
@@ -463,12 +474,12 @@ namespace InputVisualizer.UI
 
             var axisIndex = -1;
             var axisValueIsNegative = false;
-            if(buttonDetected == ButtonType.NONE)
+            if (buttonDetected == ButtonType.NONE)
             {
-                for( var i = 0; i < state.Axes.Length; i++)
+                for (var i = 0; i < state.Axes.Length; i++)
                 {
                     var delta = Math.Abs(state.Axes[i] - _initialJoystickState.Axes[i]);
-                    if (delta > _gameState.DirectInputDeadZoneTolerance )
+                    if (delta > _gameState.DirectInputDeadZoneTolerance)
                     {
                         buttonDetected = _listeningMapping.ButtonType;
                         axisIndex = i;
@@ -498,7 +509,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.JoystickHatIndex = hatIndex;
                 _listeningMapping.JoystickAxisIndex = axisIndex;
                 _listeningMapping.JoystickAxisDirectionIsNegative = axisValueIsNegative;
-                
+
                 var buttonText = buttonDetected.ToString() + " Button";
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                 _listeningButton.Text = buttonText;
@@ -1270,7 +1281,7 @@ namespace InputVisualizer.UI
             var aboutLabels = new List<Label>
             {
                 CreateLabel("Version:", 0, 0, 1, 1),
-                CreateLabel("1.6.3", 0, 1, 1, 1),
+                CreateLabel("1.6.4", 0, 1, 1, 1),
                 CreateLabel("Author:", 1, 0, 1, 1),
                 CreateLabel("KungFusedMike", 1, 1, 1, 1),
                 CreateLabel("Email:", 2, 0, 1, 1),
@@ -1285,6 +1296,55 @@ namespace InputVisualizer.UI
 
             dialog.Content = grid;
             dialog.ButtonCancel.Visible = false;
+            dialog.ShowModal(_desktop);
+        }
+
+        private void ShowGeneralSettingsDialog()
+        {
+            var dialog = new Dialog
+            {
+                Title = "General Config",
+                TitleTextColor = Color.DarkSeaGreen
+            };
+
+            var grid = new Grid
+            {
+                RowSpacing = 8,
+                ColumnSpacing = 8,
+                Padding = new Thickness(3),
+                Margin = new Thickness(3),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+
+            var serverLabel = CreateLabel("USB2SNES Server:", 0, 0, 1, 1);
+            grid.Widgets.Add(serverLabel);
+            var serverTextBox = CreateTextBox(_config.GeneralSettings.Usb2SnesServer.ToString(), 0, 1, 1, 1);
+            serverTextBox.Width = 200;
+            grid.Widgets.Add(serverTextBox);
+
+            var serverPort = CreateLabel("Port:", 0, 2, 1, 1);
+            grid.Widgets.Add(serverLabel);
+            var portTextBox = CreateTextBox(_config.GeneralSettings.Usb2SnesPort.ToString(), 0, 3, 1, 1);
+            portTextBox.Width = 50;
+            grid.Widgets.Add(portTextBox);
+
+            dialog.Content = grid;
+            dialog.Closed += (s, a) =>
+            {
+                if (!dialog.Result)
+                {
+                    return;
+                }
+                _config.GeneralSettings.Usb2SnesServer = serverTextBox.Text;
+                _config.GeneralSettings.Usb2SnesPort = portTextBox.Text;
+
+                GeneralSettingsUpdated?.Invoke(this, EventArgs.Empty);
+            };
             dialog.ShowModal(_desktop);
         }
 

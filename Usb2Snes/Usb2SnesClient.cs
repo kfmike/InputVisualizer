@@ -12,7 +12,8 @@ namespace InputVisualizer.Usb2Snes
 {
     public class Usb2SnesClient
     {
-        private const string SERVER_URL = "ws://localhost:8080";
+        public const string DEFAULT_SERVER = "ws://localhost";
+        public const string DEFAULT_PORT = "8080";
 
         private const string SNES_SPACE = "SNES";
 
@@ -26,6 +27,7 @@ namespace InputVisualizer.Usb2Snes
         private const int ROM_TIMER_MS = 2000;
 
         ClientWebSocket _socket = null;
+        private string _server = null;
         private List<string> _deviceList = new List<string>();
         private Usb2SnesGame _selectedGame;
         public List<string> Devices => _deviceList;
@@ -39,6 +41,7 @@ namespace InputVisualizer.Usb2Snes
 
         public Usb2SnesClient()
         {
+            _server = $"{DEFAULT_SERVER}:{DEFAULT_PORT}";
             _selectedGame = CreateDefaultGame();
             _inputTimer = new System.Timers.Timer();
             _inputTimer.Elapsed += InputTimerElapsed;
@@ -89,6 +92,15 @@ namespace InputVisualizer.Usb2Snes
         public void SetCurrentGame(Usb2SnesGame game)
         {
             _selectedGame = game ?? CreateDefaultGame();
+        }
+
+        public void SetServer(string server, string port)
+        {
+            if (string.IsNullOrEmpty(server) || string.IsNullOrEmpty(port))
+            {
+                return;
+            }
+            _server = $"{server}:{port}";
         }
 
         public async Task StopUsb2SnesClient()
@@ -245,7 +257,7 @@ namespace InputVisualizer.Usb2Snes
 
             try
             {
-                await _socket.ConnectAsync(new Uri(SERVER_URL), CreateCancellationToken());
+                await _socket.ConnectAsync(new Uri(_server), CreateCancellationToken());
                 return _socket.State == WebSocketState.Open;
             }
             catch
