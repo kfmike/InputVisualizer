@@ -17,6 +17,7 @@ namespace InputVisualizer.Config
                 MappedButtonType = mappedButtonType,
                 MappingType = ButtonMappingType.Button,
                 MappedKey = Keys.None,
+                MappedMouseButton = MouseButtonType.None,
                 Color = color
             });
         }
@@ -30,6 +31,19 @@ namespace InputVisualizer.Config
             }
             mapping.MappingType = ButtonMappingType.Key;
             mapping.MappedKey = mappedKey;
+            mapping.MappedButtonType = ButtonType.NONE;
+        }
+
+        public void MapToMouse(ButtonType buttonType, MouseButtonType mappedMouseButton)
+        {
+            var mapping = ButtonMappings.FirstOrDefault(m => m.ButtonType == buttonType);
+            if (mapping == null)
+            {
+                return;
+            }
+            mapping.MappingType = ButtonMappingType.Mouse;
+            mapping.MappedMouseButton = mappedMouseButton;
+            mapping.MappedKey = Keys.None;
             mapping.MappedButtonType = ButtonType.NONE;
         }
 
