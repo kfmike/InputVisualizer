@@ -542,7 +542,7 @@ namespace InputVisualizer
 
         private void RetroSpy_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
         {
-            _retroSpyControllerHandler.ProcessControllerState(e);
+            _retroSpyControllerHandler.ProcessControllerState(e, _gameState.CurrentFrame);
         }
 
         private void Mister_ControllerStateChanged(object? reader, ControllerStateEventArgs e)
@@ -553,7 +553,7 @@ namespace InputVisualizer
             }
             else
             {
-                _retroSpyControllerHandler.ProcessControllerState(e);
+                _retroSpyControllerHandler.ProcessControllerState(e, _gameState.CurrentFrame);
             }
         }
 
@@ -801,6 +801,7 @@ namespace InputVisualizer
         protected override void Update(GameTime gameTime)
         {
             _gameState.CurrentTimeStamp = DateTime.Now;
+            _gameState.CurrentFrame++;
 
             if (_ui.ListeningForInput)
             {
@@ -914,10 +915,10 @@ namespace InputVisualizer
                 }
                 if (button.Value.IsPressed() != pressed)
                 {
-                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                 }
             }
-            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp, _gameState.CurrentFrame);
         }
 
         private void ReadGamepadInputs()
@@ -950,7 +951,7 @@ namespace InputVisualizer
                         pressed = keyboardState.IsKeyDown(button.Value.MappedKey);
                         if (button.Value.IsPressed() != pressed)
                         {
-                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                         }
                     }
                     else
@@ -958,7 +959,7 @@ namespace InputVisualizer
                         pressed = KeyboardHook.KeyboardState[button.Value.MappedKey];
                         if (button.Value.IsPressed() != pressed)
                         {
-                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                            _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                         }
                     }
 
@@ -1022,7 +1023,7 @@ namespace InputVisualizer
 
                     if (button.Value.IsPressed() != pressed)
                     {
-                        _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                        _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                     }
 
                     continue;
@@ -1112,7 +1113,7 @@ namespace InputVisualizer
 
                 if (button.Value.IsPressed() != pressed)
                 {
-                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                 }
 
                 switch (button.Value.UnmappedButtonType)
@@ -1140,7 +1141,7 @@ namespace InputVisualizer
                 }
             }
 
-            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp, _gameState.CurrentFrame);
         }
 
         private void ReadJoystickInputs()
@@ -1231,10 +1232,10 @@ namespace InputVisualizer
 
                 if (button.Value.IsPressed() != pressed)
                 {
-                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
+                    _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp, _gameState.CurrentFrame);
                 }
             }
-            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp, _gameState.CurrentFrame);
         }
 
         protected override void Draw(GameTime gameTime)

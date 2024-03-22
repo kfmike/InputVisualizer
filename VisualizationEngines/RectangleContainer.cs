@@ -13,6 +13,7 @@ namespace InputVisualizer.VisualizationEngines
         public string ButtonName { get; set; }
         public string UnmappedButtonName { get; set; }
         public bool ButtonIsCurrentlyPressed { get; set; }
+        public int LastPressFrameCount { get; set; }
         public TimeSpan ButtonPressedElapsedTime { get; set; } = TimeSpan.Zero;
         public Color Color { get; set; } = Color.PapayaWhip;
         public Dictionary<long,PressedVector> PressedVectors { get; set; } = new Dictionary<long, PressedVector>();

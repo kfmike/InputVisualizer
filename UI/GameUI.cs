@@ -1619,14 +1619,27 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayFrequencyCheck);
 
-            var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 15, 0, 1, 1, null, HorizontalAlignment.Right);
+            var frameDurationLabel = CreateLabel("Frame Duration", 15, 0, 1, 1, null, HorizontalAlignment.Right);
+            grid.Widgets.Add(frameDurationLabel);
+            var displayFrameDurationLabel = CreateLabel("Enabled", 15, 3, 1, 1);
+            grid.Widgets.Add(displayDurationLabel);
+
+            var displayFrameDurationCheck = new CheckBox()
+            {
+                GridRow = 15,
+                GridColumn = 4,
+                IsChecked = _config.DisplayConfig.DisplayFrameDuration,
+            };
+            grid.Widgets.Add(displayFrameDurationCheck);
+
+            var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 16, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(illegalInputsLabel);
-            var illegalInputsEnabledLabel = CreateLabel("Enabled", 15, 3, 1, 1);
+            var illegalInputsEnabledLabel = CreateLabel("Enabled", 16, 3, 1, 1);
             grid.Widgets.Add(illegalInputsEnabledLabel);
 
             var illegalInputCheck = new CheckBox()
             {
-                GridRow = 15,
+                GridRow = 16,
                 GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayIllegalInputs,
             };
@@ -1665,6 +1678,7 @@ namespace InputVisualizer.UI
                 _config.DisplayConfig.EmptyContainerColor = emptyContainerColorButton.TextColor;
                 _config.DisplayConfig.IllegalInputColor = illegalInputColorButton.TextColor;
                 _config.DisplayConfig.DisplayIllegalInputs = illegalInputCheck.IsChecked;
+                _config.DisplayConfig.DisplayFrameDuration = displayFrameDurationCheck.IsChecked;
 
                 DisplaySettingsUpdated?.Invoke(this, EventArgs.Empty);
             };

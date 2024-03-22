@@ -4,11 +4,11 @@ namespace InputVisualizer.RetroSpyStateHandlers
 {
     public class PlaystationHandler : RetroSpyControllerHandler
     {
-        public PlaystationHandler( GameState gameState ) : base( gameState ) { }
+        public PlaystationHandler(GameState gameState) : base(gameState) { }
 
-        public override void ProcessControllerState(ControllerStateEventArgs e)
+        public override void ProcessControllerState(ControllerStateEventArgs e, int currentFrame)
         {
-            base.ProcessControllerState(e);
+            base.ProcessControllerState(e, currentFrame);
         }
     }
 }

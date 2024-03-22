@@ -68,9 +68,14 @@ namespace InputVisualizer.VisualizationEngines
                 BuildContainerPressedVectors(container, gameState.ButtonStates[container.ButtonName], lineLength, gameState, pixelAdvance);
                 container.State = container.IsContainerActive(stateHistory, dimSpeed) ? RectangleContainerState.Active : RectangleContainerState.Dim;
                 container.ButtonIsCurrentlyPressed = stateHistory.IsPressed();
+                container.LastPressFrameCount = stateHistory.GetLastPressedFrames();
                 if (container.ButtonIsCurrentlyPressed)
                 {
                     container.ButtonPressedElapsedTime = stateHistory.PressedElapsed();
+                }
+                else
+                {
+                    container.LastPressFrameCount = stateHistory.GetLastPressedFrames();
                 }
             }
 
@@ -183,12 +188,19 @@ namespace InputVisualizer.VisualizationEngines
                         }
                     }
 
+                    var displayingFrequency = false;
                     if (config.DisplayConfig.DisplayFrequency)
                     {
                         if (gameState.FrequencyDict[container.ButtonName] >= config.DisplayConfig.MinDisplayFrequency)
                         {
+                            displayingFrequency = true;
                             spriteBatch.DrawString(textures.Font18, $"x{gameState.FrequencyDict[container.ButtonName]}", container.InfoVector, container.Color);
                         }
+                    }
+
+                    if (!displayingFrequency && !container.ButtonIsCurrentlyPressed && config.DisplayConfig.DisplayFrameDuration && container.LastPressFrameCount > 0 & container.LastPressFrameCount < 60)
+                    {
+                        spriteBatch.DrawString(textures.Font18, $"{container.LastPressFrameCount}f", container.InfoVector, container.Color);
                     }
                 }
             }
