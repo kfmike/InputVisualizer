@@ -11,6 +11,7 @@ using System.IO.Ports;
 using Microsoft.Xna.Framework.Input;
 using Myra.Graphics2D.Brushes;
 using InputVisualizer.RetroSpy;
+using System.Timers;
 
 namespace InputVisualizer.UI
 {
@@ -21,6 +22,7 @@ namespace InputVisualizer.UI
         private GameState _gameState;
 
         private bool _listeningForInput = false;
+        private bool _listeningForInputEnabled = true;
         private bool _listeningCancelPressed = false;
         private ButtonMapping _listeningMapping;
         private TextButton _listeningButton;
@@ -36,6 +38,7 @@ namespace InputVisualizer.UI
 
         private HorizontalStackPanel _mainMenuContainer;
         private Dialog _waitMessageBox = null;
+        private Timer _listeningCooldownTimer;
 
         public bool ListeningForInput => _listeningForInput;
         private JoystickState _initialJoystickState;
@@ -56,6 +59,17 @@ namespace InputVisualizer.UI
             MyraEnvironment.Game = game;
             _config = config;
             _gameState = gameState;
+
+            _listeningCooldownTimer = new Timer();
+            _listeningCooldownTimer.Elapsed += ListeningCooldownTimerElapsed;
+            _listeningCooldownTimer.Interval = 200;
+            _listeningCooldownTimer.AutoReset = false;
+            _listeningCooldownTimer.Enabled = false;
+        }
+
+        private void ListeningCooldownTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            _listeningForInputEnabled = true;
         }
 
         public void Init(Dictionary<string, SystemGamePadInfo> systemGamepads, Dictionary<string, SystemJoyStickInfo> systemJoysticks, List<string> usb2SnesDevices, Usb2SnesGameList usb2SnesGameList)
@@ -122,7 +136,7 @@ namespace InputVisualizer.UI
             }
             inputSourceCombo.Items.Add(new ListItem("RetroSpy", Color.White, "spy"));
             inputSourceCombo.Items.Add(new ListItem("RetroSpy MiSTer", Color.White, "mister"));
-            inputSourceCombo.Items.Add(new ListItem("Keyboard", Color.White, "keyboard"));
+            inputSourceCombo.Items.Add(new ListItem("Keyboard/Mouse", Color.White, "keyboard"));
 
             foreach (var device in usb2SnesDevices)
             {
@@ -292,6 +306,7 @@ namespace InputVisualizer.UI
 
             var keyDetected = Keys.None;
             var buttonDetected = ButtonType.NONE;
+            var mouseButtonDetected = MouseButtonType.None;
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex, GamePadDeadZone.Circular);
             var activeConfig = _gameState.ActiveGamepadConfig;
 
@@ -300,8 +315,32 @@ namespace InputVisualizer.UI
             {
                 keyDetected = pressedKeys[0];
             }
+            var mouseState = Mouse.GetState();
+            if (mouseState.ToString() != "None")
+            {
+                if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                    mouseButtonDetected = MouseButtonType.LeftButton;
+                }
+                else if (mouseState.RightButton == ButtonState.Pressed)
+                {
+                    mouseButtonDetected = MouseButtonType.RightButton;
+                }
+                else if (mouseState.MiddleButton == ButtonState.Pressed)
+                {
+                    mouseButtonDetected = MouseButtonType.MiddleButton;
+                }
+                else if (mouseState.XButton1 == ButtonState.Pressed)
+                {
+                    mouseButtonDetected = MouseButtonType.XButton1;
+                }
+                else if (mouseState.XButton2 == ButtonState.Pressed)
+                {
+                    mouseButtonDetected = MouseButtonType.XButton2;
+                }
+            }
 
-            if (keyDetected == Keys.None && !activeConfig.IsKeyboard)
+            if (keyDetected == Keys.None && mouseButtonDetected == MouseButtonType.None && !activeConfig.IsKeyboard)
             {
                 if (activeConfig.UseLStickForDpad)
                 {
@@ -378,6 +417,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
+                _listeningMapping.MappedMouseButton = MouseButtonType.None;
                 var buttonText = buttonDetected.ToString() + " Button";
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                 _listeningButton.Text = buttonText;
@@ -404,6 +444,7 @@ namespace InputVisualizer.UI
             {
                 _listeningMapping.MappingType = ButtonMappingType.Key;
                 _listeningMapping.MappedButtonType = ButtonType.NONE;
+                _listeningMapping.MappedMouseButton = MouseButtonType.None;
                 _listeningMapping.MappedKey = keyDetected;
                 var buttonText = keyDetected.ToString() + " Key";
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
@@ -427,6 +468,41 @@ namespace InputVisualizer.UI
                     }
                 }
                 _listeningForInput = false;
+            }
+            else if (mouseButtonDetected != MouseButtonType.None)
+            {
+                _listeningMapping.MappingType = ButtonMappingType.Mouse;
+                _listeningMapping.MappedButtonType = ButtonType.NONE;
+                _listeningMapping.MappedMouseButton = mouseButtonDetected;
+                _listeningMapping.MappedKey = Keys.None;
+                var buttonText = "Mouse " + mouseButtonDetected.ToString();
+                buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
+                _listeningButton.Text = buttonText;
+
+                foreach (var mapping in activeConfig.ButtonMappingSet.ButtonMappings)
+                {
+                    if (mapping == _listeningMapping)
+                    {
+                        continue;
+                    }
+                    if (mapping.MappedMouseButton == mouseButtonDetected)
+                    {
+                        mapping.MappedMouseButton = MouseButtonType.None;
+                        mapping.MappingType = ButtonMappingType.Button;
+                        var textBox = _listeningGrid.Widgets.OfType<TextButton>().FirstOrDefault(b => b.Tag == mapping);
+                        if (textBox != null)
+                        {
+                            textBox.Text = mapping.MappedMouseButton.ToString();
+                        }
+                    }
+                }
+                _listeningForInput = false;
+            }
+
+            if (!_listeningForInput)
+            {
+                _listeningForInputEnabled = false;
+                _listeningCooldownTimer.Start();
             }
         }
 
@@ -506,6 +582,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
+                _listeningMapping.MappedMouseButton = MouseButtonType.None;
                 _listeningMapping.JoystickHatIndex = hatIndex;
                 _listeningMapping.JoystickAxisIndex = axisIndex;
                 _listeningMapping.JoystickAxisDirectionIsNegative = axisValueIsNegative;
@@ -570,6 +647,7 @@ namespace InputVisualizer.UI
                 _listeningMapping.MappingType = ButtonMappingType.Button;
                 _listeningMapping.MappedButtonType = buttonDetected;
                 _listeningMapping.MappedKey = Keys.None;
+                _listeningMapping.MappedMouseButton = MouseButtonType.None;
                 var buttonText = buttonDetected.ToString() + " Button";
                 buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                 _listeningButton.Text = buttonText;
@@ -1142,9 +1220,13 @@ namespace InputVisualizer.UI
                     var listenPrompt = "Press Button";
                     if (_gameState.CurrentInputMode == InputMode.XInputOrKeyboard && _gameState.ActiveGamepadConfig != null)
                     {
-                        listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key..." : "Press Button/Key...";
+                        listenPrompt = _gameState.ActiveGamepadConfig.IsKeyboard ? "Press Key/Mouse..." : "Press Button/Key/Mouse...";
                     }
-                    var buttonText = mapping.MappingType == ButtonMappingType.Button ? mapping.MappedButtonType.ToString() + " Button" : mapping.MappedKey.ToString() + " Key";
+                    var buttonText = mapping.MappingType == ButtonMappingType.Button ?
+                        mapping.MappedButtonType.ToString() + " Button" :
+                        mapping.MappingType == ButtonMappingType.Mouse ?
+                        "Mouse " + mapping.MappedMouseButton.ToString() :
+                        mapping.MappedKey.ToString() + " Key";
                     buttonText = buttonText.Length > MAX_MAP_BUTTON_LENGTH ? buttonText.Substring(0, MAX_MAP_BUTTON_LENGTH) : buttonText;
                     var mapButton = CreateButton(buttonText, currGridRow, currColumn, 1, 1);
 
@@ -1164,6 +1246,12 @@ namespace InputVisualizer.UI
                             messageBox.ShowModal(_desktop);
                             return;
                         }
+
+                        if (!_listeningForInputEnabled)
+                        {
+                            return;
+                        }
+
                         if (_gameState.CurrentInputMode == InputMode.DirectInput && _gameState.ActiveJoystickConfig != null)
                         {
                             _initialJoystickState = Joystick.GetState(_gameState.CurrentJoystickIndex);
@@ -1281,7 +1369,7 @@ namespace InputVisualizer.UI
             var aboutLabels = new List<Label>
             {
                 CreateLabel("Version:", 0, 0, 1, 1),
-                CreateLabel("1.6.4", 0, 1, 1, 1),
+                CreateLabel("1.6.5", 0, 1, 1, 1),
                 CreateLabel("Author:", 1, 0, 1, 1),
                 CreateLabel("KungFusedMike", 1, 1, 1, 1),
                 CreateLabel("Email:", 2, 0, 1, 1),
@@ -1328,7 +1416,7 @@ namespace InputVisualizer.UI
             grid.Widgets.Add(serverTextBox);
 
             var serverPort = CreateLabel("Port:", 0, 2, 1, 1);
-            grid.Widgets.Add(serverLabel);
+            grid.Widgets.Add(serverPort);
             var portTextBox = CreateTextBox(_config.GeneralSettings.Usb2SnesPort.ToString(), 0, 3, 1, 1);
             portTextBox.Width = 50;
             grid.Widgets.Add(portTextBox);

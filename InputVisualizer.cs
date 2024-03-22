@@ -732,6 +732,10 @@ namespace InputVisualizer
                 {
                     dictKey = mapping.MappedKey.ToString();
                 }
+                else if (mapping.MappingType == ButtonMappingType.Mouse && mapping.MappedMouseButton != MouseButtonType.None)
+                {
+                    dictKey = mapping.MappedMouseButton.ToString();
+                }
                 if (string.IsNullOrEmpty(dictKey))
                 {
                     continue;
@@ -741,7 +745,8 @@ namespace InputVisualizer
                     Color = mapping.Color,
                     UnmappedButtonType = mapping.ButtonType,
                     MappingType = mapping.MappingType,
-                    MappedKey = mapping.MappedKey
+                    MappedKey = mapping.MappedKey,
+                    MappedMouseButton = mapping.MappedMouseButton,
                 });
             }
         }
@@ -919,6 +924,7 @@ namespace InputVisualizer
         {
             var timeStamp = _gameState.CurrentTimeStamp;
             var keyboardState = Keyboard.GetState();
+            var mouseState = Mouse.GetState();
             var state = GamePad.GetState(_gameState.CurrentPlayerIndex);
             var analogDpadState = InputHelper.GetAnalogDpadMovement(state, _gameState.AnalogStickDeadZoneTolerance);
             var gamepad = _gameState.ActiveGamepadConfig;
@@ -978,6 +984,45 @@ namespace InputVisualizer
                                 dpadState.Right = pressed;
                                 break;
                             }
+                    }
+
+                    continue;
+                }
+
+                if (button.Value.MappingType == ButtonMappingType.Mouse)
+                {
+                    switch (button.Value.MappedMouseButton)
+                    {
+                        case MouseButtonType.LeftButton:
+                            {
+                                pressed = mouseState.LeftButton == ButtonState.Pressed;
+                                break;
+                            }
+                        case MouseButtonType.RightButton:
+                            {
+                                pressed = mouseState.RightButton == ButtonState.Pressed;
+                                break;
+                            }
+                        case MouseButtonType.MiddleButton:
+                            {
+                                pressed = mouseState.MiddleButton == ButtonState.Pressed;
+                                break;
+                            }
+                        case MouseButtonType.XButton1:
+                            {
+                                pressed = mouseState.XButton1 == ButtonState.Pressed;
+                                break;
+                            }
+                        case MouseButtonType.XButton2:
+                            {
+                                pressed = mouseState.XButton2 == ButtonState.Pressed;
+                                break;
+                            }
+                    }
+
+                    if (button.Value.IsPressed() != pressed)
+                    {
+                        _gameState.ButtonStates[button.Key].AddStateChange(pressed, timeStamp);
                     }
 
                     continue;
