@@ -23,8 +23,9 @@ namespace InputVisualizer
         private bool _isPressed { get; set; }
         private ButtonStateValue _lastState { get; set; }
         public bool IsViolationStateHistory { get; set; }
+        private int _lastPressElapsedFrames { get; set; } = 0;
 
-        public void AddStateChange(bool state, DateTime time)
+        public void AddStateChange(bool state, DateTime time, int currentFrame)
         {
             lock (_modifyLock)
             {
@@ -33,8 +34,9 @@ namespace InputVisualizer
                     _lastState.EndTime = time;
                     _lastState.Completed = true;
                     LastActiveCompletedTime = _lastState.IsPressed ? DateTime.Now : DateTime.MinValue;
+                    _lastPressElapsedFrames = !state ? Math.Abs(_lastState.StartFrame - currentFrame) : 0;
                 }
-                var newState = new ButtonStateValue { IsPressed = state, StartTime = time };
+                var newState = new ButtonStateValue { IsPressed = state, StartTime = time, StartFrame = currentFrame };
                 StateChangeHistory.Add(newState);
                 StateChangeCount++;
                 _lastState = newState;
@@ -80,6 +82,14 @@ namespace InputVisualizer
             lock (_modifyLock)
             {
                 return _isPressed;
+            }
+        }
+
+        public int GetLastPressedFrames()
+        {
+            lock (_modifyLock)
+            {
+                return _lastPressElapsedFrames;
             }
         }
 

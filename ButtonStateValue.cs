@@ -8,5 +8,6 @@ namespace InputVisualizer
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public bool Completed { get; set; }
+        public int StartFrame { get; set; }
     }
 }

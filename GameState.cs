@@ -27,6 +27,7 @@ namespace InputVisualizer
         public float DirectInputDeadZoneTolerance = 15500;
         public bool DisplayIllegalInputs { get; set; }
         public DateTime CurrentTimeStamp { get; set; } = DateTime.Now;
+        public int CurrentFrame { get; set; } = 0;
 
         public GameState()
         {
@@ -67,7 +68,7 @@ namespace InputVisualizer
             PixelsPerMs = 0.05f * currentSpeed;
         }
 
-        public void ProcessIllegalDpadStates( DPadState dPadState, DateTime timeStamp )
+        public void ProcessIllegalDpadStates( DPadState dPadState, DateTime timeStamp, int currentFrame )
         {
             if( !DisplayIllegalInputs )
             {
@@ -79,11 +80,11 @@ namespace InputVisualizer
 
             if(  upDownPressed != (dPadState.Up && dPadState.Down ) )
             {
-                ButtonStates["updown_violation"].AddStateChange(dPadState.Up && dPadState.Down, timeStamp);
+                ButtonStates["updown_violation"].AddStateChange(dPadState.Up && dPadState.Down, timeStamp, currentFrame);
             }
             if (leftRightPressed != (dPadState.Left && dPadState.Right))
             {
-                ButtonStates["leftright_violation"].AddStateChange(dPadState.Left && dPadState.Right, timeStamp);
+                ButtonStates["leftright_violation"].AddStateChange(dPadState.Left && dPadState.Right, timeStamp, currentFrame);
             }
         }
     }

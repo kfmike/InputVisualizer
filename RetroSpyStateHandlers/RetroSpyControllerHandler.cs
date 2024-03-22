@@ -12,7 +12,7 @@ namespace InputVisualizer.RetroSpyStateHandlers
             _gameState = gameState;
         }
 
-        public virtual void ProcessControllerState(ControllerStateEventArgs e)
+        public virtual void ProcessControllerState(ControllerStateEventArgs e, int currentFrame)
         {
             var dpadState = new DPadState();
             var timeStamp = _gameState.CurrentTimeStamp;
@@ -26,7 +26,7 @@ namespace InputVisualizer.RetroSpyStateHandlers
 
                 if (_gameState.ButtonStates[button.Key].IsPressed() != button.Value)
                 {
-                    _gameState.ButtonStates[button.Key].AddStateChange(button.Value, timeStamp);
+                    _gameState.ButtonStates[button.Key].AddStateChange(button.Value, timeStamp, currentFrame);
                 }
 
                 switch (button.Key)
@@ -53,7 +53,7 @@ namespace InputVisualizer.RetroSpyStateHandlers
                         }
                 }
             }
-            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp);
+            _gameState.ProcessIllegalDpadStates(dpadState, timeStamp, _gameState.CurrentFrame);
         }
     }
 }
