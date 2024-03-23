@@ -6,12 +6,13 @@ Useful for speedrunners and streamers alike.
 
 **Features**
 
-- PC XInput/DirectInput gamepad and keyboard support with customizable input mapping
+- PC XInput/DirectInput gamepad, keyboard, and mouse support with customizable input mapping
 - RetroSpy/NintendoSpy support for NES, SNES, Sega Genesis, and Playstation 1/2 consoles
 - RetroSpy MiSTer script support
 - SD2SNES/FXPAK PRO support for SNES hardware using Usb2Snes/QUsb2Snes/SNI
 - Customizable display with background transparency for easy integration into streaming layouts
 - Displays button press frequency and duration metrics
+- Display frame duration metrics for the last button press, configurable per button up to a max of 20 frames
 - Compact display view option to only show active buttons
 - Option to display illegal d-pad input combinations such as up + down at the same time
 
@@ -24,6 +25,10 @@ Add InputVisualizer as a "Game Capture" source.
 **Transparent Background**
 - Check "Allow Transparency" in the game input source properties.
 - Set the InputVisualizer background color alpha value to zero (default)
+
+# Frame Counts
+When configuring input mappings, there is a column named "Max Frames". If you select a value greater than zero for a specific button, the visualizer will show you how many frames the last button press was, up to the maximum frame count specified.
+So, if for example you only care about viewing frame duration for the A button up to 5 frames, you would set that button's "Max Frames" to 5, and whenever you do a press between 1f-5f, it will show up in the visualizer display next to the line.
 
 # Compact View
 By default, the visualizer will be in compact view, and only show a maximum # of lines. Buttons that are pressed but cannot appear on a line will be displayed below or next to the lines and flash to indicate activity.
