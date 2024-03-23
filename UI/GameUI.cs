@@ -1639,7 +1639,7 @@ namespace InputVisualizer.UI
 
             var illegalInputCheck = new CheckBox()
             {
-                GridRow = 16,
+                GridRow = 15,
                 GridColumn = 4,
                 IsChecked = _config.DisplayConfig.DisplayIllegalInputs,
             };
