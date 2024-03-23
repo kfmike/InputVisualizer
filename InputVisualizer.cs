@@ -700,7 +700,12 @@ namespace InputVisualizer
             }
             foreach (var mapping in buttonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
-                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
+                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() 
+                { 
+                    Color = mapping.Color, 
+                    UnmappedButtonType = mapping.ButtonType,
+                    MaxFrameDisplay = mapping.MaxFrameDisplay
+                });
             }
         }
 
@@ -709,7 +714,12 @@ namespace InputVisualizer
             _gameState.ButtonStates.Clear();
             foreach (var mapping in _config.Usb2SnesConfig.ButtonMappingSet.ButtonMappings.Where(m => m.IsVisible).OrderBy(m => m.Order))
             {
-                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
+                _gameState.ButtonStates.Add(mapping.ButtonType.ToString(), new ButtonStateHistory() 
+                { 
+                    Color = mapping.Color, 
+                    UnmappedButtonType = mapping.ButtonType,
+                    MaxFrameDisplay = mapping.MaxFrameDisplay
+                });
             }
         }
 
@@ -747,6 +757,7 @@ namespace InputVisualizer
                     MappingType = mapping.MappingType,
                     MappedKey = mapping.MappedKey,
                     MappedMouseButton = mapping.MappedMouseButton,
+                    MaxFrameDisplay = mapping.MaxFrameDisplay
                 });
             }
         }
@@ -768,7 +779,8 @@ namespace InputVisualizer
                         UnmappedButtonType = mapping.ButtonType,
                         JoystickHatIndex = mapping.JoystickHatIndex,
                         JoystickAxisIndex = mapping.JoystickAxisIndex,
-                        JoystickAxisDirectionIsNegative = mapping.JoystickAxisDirectionIsNegative
+                        JoystickAxisDirectionIsNegative = mapping.JoystickAxisDirectionIsNegative,
+                        MaxFrameDisplay = mapping.MaxFrameDisplay
                     });
                 }
             }
@@ -787,7 +799,12 @@ namespace InputVisualizer
             {
                 if (mapping.MappingType == ButtonMappingType.Button && mapping.MappedButtonType != ButtonType.NONE)
                 {
-                    _gameState.ButtonStates.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() { Color = mapping.Color, UnmappedButtonType = mapping.ButtonType });
+                    _gameState.ButtonStates.Add(mapping.MappedButtonType.ToString(), new ButtonStateHistory() 
+                    { 
+                        Color = mapping.Color, 
+                        UnmappedButtonType = mapping.ButtonType,
+                        MaxFrameDisplay = mapping.MaxFrameDisplay
+                    });
                 }
             }
         }
