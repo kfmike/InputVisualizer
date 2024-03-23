@@ -27,7 +27,7 @@ Add InputVisualizer as a "Game Capture" source.
 - Set the InputVisualizer background color alpha value to zero (default)
 
 # Frame Counts
-When configuring input mappings, there is a column named "Max Frames". If you select a value greater than zero for a specific button, the visualizer will show you how many frames the last button press was, up to the maximum frame count specified.
+When configuring input mappings, there is a column named "Max Frames". If you select a value greater than zero for a specific button, the visualizer will show you how many frames the last button press was, 60fps, up to the maximum frame count specified.
 So, if for example you only care about viewing frame duration for the A button up to 5 frames, you would set that button's "Max Frames" to 5, and whenever you do a press between 1f-5f, it will show up in the visualizer display next to the line.
 
 # Compact View
