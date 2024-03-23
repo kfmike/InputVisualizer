@@ -19,11 +19,12 @@ namespace InputVisualizer
         public Keys MappedKey { get; set; }
         public MouseButtonType MappedMouseButton { get; set; }
         public int StateChangeCount { get; private set; }
+        public int MaxFrameDisplay { get; set; }
         public DateTime LastActiveCompletedTime { get; set; } = DateTime.MinValue;
+        public int LastActiveFrameCount { get; set; } = 0;
         private bool _isPressed { get; set; }
         private ButtonStateValue _lastState { get; set; }
         public bool IsViolationStateHistory { get; set; }
-        private int _lastPressElapsedFrames { get; set; } = 0;
 
         public void AddStateChange(bool state, DateTime time, int currentFrame)
         {
@@ -34,7 +35,7 @@ namespace InputVisualizer
                     _lastState.EndTime = time;
                     _lastState.Completed = true;
                     LastActiveCompletedTime = _lastState.IsPressed ? DateTime.Now : DateTime.MinValue;
-                    _lastPressElapsedFrames = !state ? Math.Abs(_lastState.StartFrame - currentFrame) : 0;
+                    LastActiveFrameCount = _lastState.IsPressed ? Math.Abs(_lastState.StartFrame - currentFrame) : 0;
                 }
                 var newState = new ButtonStateValue { IsPressed = state, StartTime = time, StartFrame = currentFrame };
                 StateChangeHistory.Add(newState);
@@ -73,6 +74,7 @@ namespace InputVisualizer
                 {
                     _lastState = null;
                     _isPressed = false;
+                    LastActiveFrameCount = 0;
                 }
             }
         }
@@ -82,14 +84,6 @@ namespace InputVisualizer
             lock (_modifyLock)
             {
                 return _isPressed;
-            }
-        }
-
-        public int GetLastPressedFrames()
-        {
-            lock (_modifyLock)
-            {
-                return _lastPressElapsedFrames;
             }
         }
 

@@ -16,5 +16,6 @@ namespace InputVisualizer.Config
         public int JoystickHatIndex { get; set; } = -1;
         public int JoystickAxisIndex { get; set; } = -1;
         public bool JoystickAxisDirectionIsNegative { get; set; }
+        public int MaxFrameDisplay { get; set; } = 0;
     }
 }

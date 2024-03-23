@@ -29,6 +29,7 @@ namespace InputVisualizer.UI
         private Grid _listeningGrid;
         private string _originalListeningButtonText;
         private const int MAX_MAP_BUTTON_LENGTH = 20;
+        private const int MAX_FRAME_DISPLAY = 20;
 
         private TextBox _misterHostnameTextBox;
         private TextBox _misterUsernameTextBox;
@@ -695,18 +696,22 @@ namespace InputVisualizer.UI
             buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            buttonConfigGrid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var visibleLabel = CreateLabel("Visible", 0, 0, 1, 1);
             var buttonLabel = CreateLabel("Button", 0, 1, 1, 1);
             var mappedToLabel = CreateLabel("Mapped To", 0, 2, 1, 1);
             var colorLabel = CreateLabel("Color", 0, 3, 1, 1);
-            var orderLabel = CreateLabel("Order", 0, 4, 1, 2);
+            var frameLabel = CreateLabel("Max Frames", 0, 4, 1, 1);
+            var orderLabel = CreateLabel("Order", 0, 5, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             buttonConfigGrid.Widgets.Add(visibleLabel);
             buttonConfigGrid.Widgets.Add(buttonLabel);
             buttonConfigGrid.Widgets.Add(mappedToLabel);
             buttonConfigGrid.Widgets.Add(colorLabel);
+            buttonConfigGrid.Widgets.Add(frameLabel);
             buttonConfigGrid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_config.MisterConfig.GetCurrentMappingSet().ButtonMappings, buttonConfigGrid, buttonMapWidgets, 1, showMapButton: true);
@@ -850,6 +855,7 @@ namespace InputVisualizer.UI
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
             grid.Widgets.Add(styleLabel);
@@ -895,13 +901,15 @@ namespace InputVisualizer.UI
             var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
             var mappedToLabel = CreateLabel("Mapped To", 2, 2, 1, 1);
             var colorLabel = CreateLabel("Color", 2, 3, 1, 1);
-            var orderLabel = CreateLabel("Order", 2, 4, 1, 2);
+            var frameLabel = CreateLabel("Max Frames", 2, 4, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 5, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             grid.Widgets.Add(visibleLabel);
             grid.Widgets.Add(buttonLabel);
             grid.Widgets.Add(mappedToLabel);
             grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(frameLabel);
             grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_gameState.ActiveGamepadConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
@@ -964,6 +972,7 @@ namespace InputVisualizer.UI
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var styleLabel = CreateLabel("Style:", 0, 0, 1, 3);
             grid.Widgets.Add(styleLabel);
@@ -990,13 +999,15 @@ namespace InputVisualizer.UI
             var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
             var mappedToLabel = CreateLabel("Mapped To", 2, 2, 1, 1);
             var colorLabel = CreateLabel("Color", 2, 3, 1, 1);
-            var orderLabel = CreateLabel("Order", 2, 4, 1, 2);
+            var frameLabel = CreateLabel("Max Frames", 2, 4, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 5, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             grid.Widgets.Add(visibleLabel);
             grid.Widgets.Add(buttonLabel);
             grid.Widgets.Add(mappedToLabel);
             grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(frameLabel);
             grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_gameState.ActiveJoystickConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 3, showMapButton: true);
@@ -1056,6 +1067,7 @@ namespace InputVisualizer.UI
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var comPortLabel = CreateLabel("COM Port:", 0, 0, 1, 1);
             grid.Widgets.Add(comPortLabel);
@@ -1097,12 +1109,14 @@ namespace InputVisualizer.UI
             var visibleLabel = CreateLabel("Visible", 2, 0, 1, 1);
             var buttonLabel = CreateLabel("Button", 2, 1, 1, 1);
             var colorLabel = CreateLabel("Color", 2, 2, 1, 1);
-            var orderLabel = CreateLabel("Order", 2, 3, 1, 2);
+            var frameLabel = CreateLabel("Max Frames", 2, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 2, 4, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             grid.Widgets.Add(visibleLabel);
             grid.Widgets.Add(buttonLabel);
             grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(frameLabel);
             grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_config.RetroSpyConfig.GetMappingSet(_config.RetroSpyConfig.ControllerType).ButtonMappings, grid, buttonMapWidgets, 3);
@@ -1152,16 +1166,19 @@ namespace InputVisualizer.UI
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
             grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
+            grid.ColumnsProportions.Add(new Proportion(ProportionType.Auto));
 
             var visibleLabel = CreateLabel("Visible", 0, 0, 1, 1);
             var buttonLabel = CreateLabel("Button", 0, 1, 1, 1);
             var colorLabel = CreateLabel("Color", 0, 2, 1, 1);
-            var orderLabel = CreateLabel("Order", 0, 3, 1, 2);
+            var frameLabel = CreateLabel("Max Frames", 0, 3, 1, 1);
+            var orderLabel = CreateLabel("Order", 0, 4, 1, 2);
             orderLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             grid.Widgets.Add(visibleLabel);
             grid.Widgets.Add(buttonLabel);
             grid.Widgets.Add(colorLabel);
+            grid.Widgets.Add(frameLabel);
             grid.Widgets.Add(orderLabel);
 
             DrawButtonMappings(_config.Usb2SnesConfig.ButtonMappingSet.ButtonMappings, grid, buttonMapWidgets, 1);
@@ -1275,6 +1292,23 @@ namespace InputVisualizer.UI
                     ChooseColor(mapping, colorButton);
                 };
                 currentWidgets.Add(colorButton);
+                currColumn++;
+
+                var maxFramesComboBox = CreateComboBox(currGridRow, currColumn, 1, 1);
+                for (var i = 0; i <= MAX_FRAME_DISPLAY; i++)
+                {
+                    var item = new ListItem(i.ToString(), Color.White, i);
+                    maxFramesComboBox.Items.Add(item);
+                    if (mapping.MaxFrameDisplay == i)
+                    {
+                        maxFramesComboBox.SelectedItem = item;
+                    }
+                }
+                maxFramesComboBox.SelectedIndexChanged += (o, e) =>
+                {
+                    mapping.MaxFrameDisplay = (int)maxFramesComboBox.SelectedItem.Tag;
+                };
+                currentWidgets.Add(maxFramesComboBox);
                 currColumn++;
 
                 if (currGridRow > gridStartRow)
@@ -1619,22 +1653,9 @@ namespace InputVisualizer.UI
             };
             grid.Widgets.Add(displayFrequencyCheck);
 
-            var frameDurationLabel = CreateLabel("Frame Duration", 15, 0, 1, 1, null, HorizontalAlignment.Right);
-            grid.Widgets.Add(frameDurationLabel);
-            var displayFrameDurationLabel = CreateLabel("Enabled", 15, 3, 1, 1);
-            grid.Widgets.Add(displayDurationLabel);
-
-            var displayFrameDurationCheck = new CheckBox()
-            {
-                GridRow = 15,
-                GridColumn = 4,
-                IsChecked = _config.DisplayConfig.DisplayFrameDuration,
-            };
-            grid.Widgets.Add(displayFrameDurationCheck);
-
-            var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 16, 0, 1, 1, null, HorizontalAlignment.Right);
+            var illegalInputsLabel = CreateLabel("Illegal D-Pad Input Display", 15, 0, 1, 1, null, HorizontalAlignment.Right);
             grid.Widgets.Add(illegalInputsLabel);
-            var illegalInputsEnabledLabel = CreateLabel("Enabled", 16, 3, 1, 1);
+            var illegalInputsEnabledLabel = CreateLabel("Enabled", 15, 3, 1, 1);
             grid.Widgets.Add(illegalInputsEnabledLabel);
 
             var illegalInputCheck = new CheckBox()
@@ -1678,7 +1699,6 @@ namespace InputVisualizer.UI
                 _config.DisplayConfig.EmptyContainerColor = emptyContainerColorButton.TextColor;
                 _config.DisplayConfig.IllegalInputColor = illegalInputColorButton.TextColor;
                 _config.DisplayConfig.DisplayIllegalInputs = illegalInputCheck.IsChecked;
-                _config.DisplayConfig.DisplayFrameDuration = displayFrameDurationCheck.IsChecked;
 
                 DisplaySettingsUpdated?.Invoke(this, EventArgs.Empty);
             };

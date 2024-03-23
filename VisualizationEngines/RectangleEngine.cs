@@ -40,7 +40,13 @@ namespace InputVisualizer.VisualizationEngines
             _emptyContainers.Clear();
             for (var i = 0; i < _maxContainers; i++)
             {
-                var emptyContainer = new RectangleContainer { ButtonName = "NONE", UnmappedButtonName = "NONE", IsEmptyContainer = true, Color = emptyContainercolor };
+                var emptyContainer = new RectangleContainer
+                {
+                    ButtonName = "NONE",
+                    UnmappedButtonName = "NONE",
+                    IsEmptyContainer = true,
+                    Color = emptyContainercolor
+                };
                 _emptyContainers.Add(emptyContainer);
             }
             InitVisibleContainers();
@@ -51,7 +57,13 @@ namespace InputVisualizer.VisualizationEngines
             _buttonContainers.Clear();
             foreach (var button in gameState.ButtonStates)
             {
-                _buttonContainers.Add(button.Key, new RectangleContainer { ButtonName = button.Key, Color = button.Value.Color, UnmappedButtonName = button.Value.UnmappedButtonType.ToString() });
+                _buttonContainers.Add(button.Key, new RectangleContainer
+                {
+                    ButtonName = button.Key,
+                    Color = button.Value.Color,
+                    UnmappedButtonName = button.Value.UnmappedButtonType.ToString(),
+                    MaxFrameCount = button.Value.MaxFrameDisplay
+                });
             }
             InitVisibleContainers();
         }
@@ -68,15 +80,11 @@ namespace InputVisualizer.VisualizationEngines
                 BuildContainerPressedVectors(container, gameState.ButtonStates[container.ButtonName], lineLength, gameState, pixelAdvance);
                 container.State = container.IsContainerActive(stateHistory, dimSpeed) ? RectangleContainerState.Active : RectangleContainerState.Dim;
                 container.ButtonIsCurrentlyPressed = stateHistory.IsPressed();
-                container.LastPressFrameCount = stateHistory.GetLastPressedFrames();
                 if (container.ButtonIsCurrentlyPressed)
                 {
                     container.ButtonPressedElapsedTime = stateHistory.PressedElapsed();
                 }
-                else
-                {
-                    container.LastPressFrameCount = stateHistory.GetLastPressedFrames();
-                }
+                container.LastPressFrameCount = stateHistory.LastActiveFrameCount;
             }
 
             var compactMode = config.DisplayConfig.MaxContainers > 0;
@@ -198,7 +206,7 @@ namespace InputVisualizer.VisualizationEngines
                         }
                     }
 
-                    if (!displayingFrequency && !container.ButtonIsCurrentlyPressed && config.DisplayConfig.DisplayFrameDuration && container.LastPressFrameCount > 0 & container.LastPressFrameCount < 60)
+                    if (!displayingFrequency && !container.ButtonIsCurrentlyPressed && container.LastPressFrameCount > 0 & container.LastPressFrameCount <= container.MaxFrameCount)
                     {
                         spriteBatch.DrawString(textures.Font18, $"{container.LastPressFrameCount}f", container.InfoVector, container.Color);
                     }

@@ -19,6 +19,5 @@ namespace InputVisualizer.Config
         public Color EmptyContainerColor { get; set; } = Color.PapayaWhip;
         public Color IllegalInputColor {  get; set; } = Color.Red;
         public bool DisplayIllegalInputs { get; set; } = false;
-        public bool DisplayFrameDuration { get; set; } = false;
     }
 }
