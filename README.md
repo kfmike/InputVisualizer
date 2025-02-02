@@ -48,6 +48,14 @@ You can update InputVisualizer with the current list by replacing the usb2snesGa
 
 https://github.com/kfmike/InputVisualizer/blob/master/usb2snesGameList.json
 
+# Troubleshooting Arduino Serial Port Error / Visualizer freezing issues:
+There is a known issue with the latest Windows driver for the usb serial com with some arduino devices.
+In order to fix this issue, it is recommended to downgrade to an older driver:
+
+In device manager go to the usb serial CHXXX in the Ports (COM & LPT) section.
+Click on update driver and then select the "Let me pick from a list of available drivers on my computer" option.
+Select the one from 2013 or 2014.
+
 # Contributing to InputVisualizer
 
 I'm not accepting any pull requests at this time.
